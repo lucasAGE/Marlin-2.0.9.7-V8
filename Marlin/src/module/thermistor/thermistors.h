@@ -276,8 +276,8 @@ typedef struct { raw_adc_t value; celsius_t celsius; } temp_entry_t;
   #define TEMPTABLE_7_LEN 0
 #endif
 
-#if TEMP_SENSOR_BED > 0
-  #define TEMPTABLE_BED TT_NAME(TEMP_SENSOR_BED)
+#if TEMP_SENSOR_BED0 > 0
+  #define TEMPTABLE_BED TT_NAME(TEMP_SENSOR_BED0)
   #define TEMPTABLE_BED_LEN COUNT(TEMPTABLE_BED)
 #else
   #define TEMPTABLE_BED_LEN 0

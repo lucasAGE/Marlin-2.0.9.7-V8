@@ -242,7 +242,7 @@
       #define SPINDLE_DIR_PIN                 43
       #define SPINDLE_LASER_PWM_PIN           45  // Hardware PWM
       #define SPINDLE_LASER_ENA_PIN           41  // Pullup!
-    #elif TEMP_SENSOR_BED == 0                    // Can't use E0 so see if HEATER_BED_PIN is available
+    #elif TEMP_SENSOR_BED0 == 0                    // Can't use E0 so see if HEATER_BED_PIN is available
       #undef HEATER_BED_PIN
       #define SPINDLE_DIR_PIN                 38  // Probably pin 4 on 10 pin connector closest to the E0 socket
       #define SPINDLE_LASER_PWM_PIN            4  // Hardware PWM - Special precautions usually needed.

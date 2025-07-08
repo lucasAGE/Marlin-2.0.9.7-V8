@@ -593,6 +593,14 @@
   #endif
 #endif
 
+#ifndef MULTI_BED_COUNT
+  #define MULTI_BED_COUNT ( \
+      (TEMP_SENSOR_BED0 > 0 ? 1 : 0) + \
+      (TEMP_SENSOR_BED1 > 0 ? 1 : 0) + \
+      (TEMP_SENSOR_BED2 > 0 ? 1 : 0) + \
+      (TEMP_SENSOR_BED3 > 0 ? 1 : 0) )
+#endif
+
 /**
  * Compatibility layer for MAX (SPI) temp boards
  */

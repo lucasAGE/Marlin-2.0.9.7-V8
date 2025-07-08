@@ -191,44 +191,16 @@
 #endif
 
 /*#################################### TCC LUCAS ####################################*/
-#include <Wire.h>
 
-// I2C address for ADS1115
-#define ADS_I2C_ADDRESS   0x48
-#define PCF_I2C_ADDRESS   0x20
+#if ADS1115_BED_READINGS
+// Define static ADS1115 instance
+Adafruit_ADS1115 Temperature::bedADS;
+#endif
 
-// Instantiate ADS1115
-Adafruit_ADS1115 bedADS;
-PCF8574 bedPCF(PCF_I2C_ADDRESS, &Wire);
-
-void init_wireI2C(){
-  Wire.begin();
-}
-
-void init_ads1115() {  
-  bedADS.begin(ADS_I2C_ADDRESS, &Wire);
-
-  // Configure ADS gain and data rate
-  bedADS.setGain(GAIN_ONE);       // ±4.096V full-scale range
-  bedADS.setDataRate(RATE_ADS1115_128SPS);
-}
-
-void init_pcf8574() { 
-  bedPCF.begin(0x00);// Configura todos os pinos como OUTPUT e desligados  
-}
-
-float read_bed_temp_ads(uint8_t bed_index) {
-  if (bed_index > 3) return NAN;
-
-  // Read raw ADC from channel A0..A3
-  int16_t raw = bedADS.readADC_SingleEnded(bed_index);  
-
-  SERIAL_ECHOPGM("Cama ");SERIAL_ECHO(bed_index);
-  SERIAL_ECHOPGM(" Raw:");SERIAL_ECHO(raw);
-  return raw;
-}
-
-
+#if PCF8574_BED_CONTROL
+// Define static PCF8574 instance with I2C address
+PCF8574 Temperature::bedPCF(PCF8574_ADDRESS, &Wire);
+#endif
 
 #if ANY(TEMP_SENSOR_0_IS_THERMISTOR, TEMP_SENSOR_1_IS_THERMISTOR, TEMP_SENSOR_2_IS_THERMISTOR, TEMP_SENSOR_3_IS_THERMISTOR, \
         TEMP_SENSOR_4_IS_THERMISTOR, TEMP_SENSOR_5_IS_THERMISTOR, TEMP_SENSOR_6_IS_THERMISTOR, TEMP_SENSOR_7_IS_THERMISTOR )
@@ -1953,7 +1925,43 @@ void Temperature::task() {
   #endif
 
   UNUSED(ms);
-}
+} //void Temperature::task()
+
+/*#################################### TCC LUCAS ####################################*/
+
+#if ADS1115_BED_READINGS || PCF8574_BED_CONTROL
+  void Temperature::initWireI2C() {
+    Wire.begin(); 
+  }
+#endif
+
+#if ADS1115_BED_READINGS
+  void Temperature::initADS1115() {
+    if (!bedADS.begin(ADS1115_ADDRESS, &Wire)) {
+      SERIAL_ECHOLNPGM("Error initializing ADS1115");
+    }
+    // Configure ADS gain and data rate
+    bedADS.setGain(GAIN_ONE);       // ±4.096V full-scale range
+    bedADS.setDataRate(RATE_ADS1115_128SPS);
+  }
+
+  float Temperature::readBedTempAds(uint8_t bed_index) {
+    if (bed_index >= MULTI_BED_COUNT) return NAN;
+    const int16_t raw = bedADS.readADC_SingleEnded(bed_index);
+    
+    SERIAL_ECHOPGM("Cama ");SERIAL_ECHO(bed_index);
+    SERIAL_ECHOPGM(" Raw:");SERIAL_ECHO(raw);
+    return raw;
+  }
+#endif
+
+#if PCF8574_BED_CONTROL
+  void Temperature::initPCF8574() { 
+    if (!bedPCF.begin(0x00)) {
+    SERIAL_ECHOLNPGM("Error initializing PCF8574");
+    }   
+  }
+#endif
 
 #define TEMP_AD595(RAW)  ((RAW) * 5.0 * 100.0 / float(HAL_ADC_RANGE) / (OVERSAMPLENR) * (TEMP_SENSOR_AD595_GAIN) + TEMP_SENSOR_AD595_OFFSET)
 #define TEMP_AD8495(RAW) ((RAW) * 6.6 * 100.0 / float(HAL_ADC_RANGE) / (OVERSAMPLENR) * (TEMP_SENSOR_AD8495_GAIN) + TEMP_SENSOR_AD8495_OFFSET)
@@ -2768,7 +2776,21 @@ void Temperature::init() {
       #endif
     );
   #endif
-}
+
+  /*#################################### TCC LUCAS ####################################*/
+
+  #if ADS1115_BED_READINGS || PCF8574_BED_CONTROL
+    initWireI2C();
+  #endif
+
+  #if ADS1115_BED_READINGS
+    initADS1115();
+  #endif
+
+  #if PCF8574_BED_CONTROL
+    initPCF8574();
+  #endif
+} //void Temperature::init()
 
 #if HAS_THERMAL_PROTECTION
 

@@ -107,7 +107,7 @@
 // Temperature Sensors
 //
 #define TEMP_0_PIN                            13
-#if TEMP_SENSOR_BED
+#if TEMP_SENSOR_BED0
   #define TEMP_BED_PIN                        14
 #else
   #define TEMP_1_PIN                          14
@@ -118,7 +118,7 @@
 // Heaters / Fans
 //
 #define HEATER_0_PIN                          10
-#if TEMP_SENSOR_BED
+#if TEMP_SENSOR_BED0
   #define HEATER_BED_PIN                       8
 #else
   #define HEATER_1_PIN                         8

@@ -1343,10 +1343,6 @@ void setup() {
 
   /*#################################### TCC LUCAS ####################################*/
 
-  init_wireI2C();
-  init_ads1115();
-  init_pcf8574();
-
   SETUP_RUN(thermalManager.init());   // Initialize temperature loop
 
   SETUP_RUN(print_job_timer.init());  // Initial setup of print job timer
@@ -1662,8 +1658,8 @@ void loop() {
       uint32_t now = millis();
       if (now - lastADS > 1000) {
         lastADS = now;
-        for (uint8_t i = 0; i < 4; i++) {
-          float t = read_bed_temp_ads(i);
+        for (uint8_t i = 0; i < MULTI_BED_COUNT; i++) {
+          float t = Temperature::readBedTempAds(i);
           SERIAL_ECHOPGM("Bed ");
           SERIAL_ECHO(i);
           SERIAL_ECHOPGM(" = ");

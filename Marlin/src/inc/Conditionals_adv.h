@@ -433,19 +433,19 @@
   #undef HEATER_7_MAXTEMP
 #endif
 
-#if TEMP_SENSOR_BED == -4
+#if TEMP_SENSOR_BED0 == -4
   #define TEMP_SENSOR_BED_IS_AD8495 1
-#elif TEMP_SENSOR_BED == -3
-  #error "MAX31855 Thermocouples (-3) not supported for TEMP_SENSOR_BED."
-#elif TEMP_SENSOR_BED == -2
-  #error "MAX6675 Thermocouples (-2) not supported for TEMP_SENSOR_BED."
-#elif TEMP_SENSOR_BED == -1
+#elif TEMP_SENSOR_BED0 == -3
+  #error "MAX31855 Thermocouples (-3) not supported for TEMP_SENSOR_BED0."
+#elif TEMP_SENSOR_BED0 == -2
+  #error "MAX6675 Thermocouples (-2) not supported for TEMP_SENSOR_BED0."
+#elif TEMP_SENSOR_BED0 == -1
   #define TEMP_SENSOR_BED_IS_AD595 1
-#elif TEMP_SENSOR_BED > 0
+#elif TEMP_SENSOR_BED0 > 0
   #define TEMP_SENSOR_BED_IS_THERMISTOR 1
-  #if TEMP_SENSOR_BED == 1000
+  #if TEMP_SENSOR_BED0 == 1000
     #define TEMP_SENSOR_BED_IS_CUSTOM 1
-  #elif TEMP_SENSOR_BED == 998 || TEMP_SENSOR_BED == 999
+  #elif TEMP_SENSOR_BED0 == 998 || TEMP_SENSOR_BED0 == 999
     #define TEMP_SENSOR_BED_IS_DUMMY 1
   #endif
 #else

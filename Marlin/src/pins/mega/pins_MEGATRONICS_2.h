@@ -87,7 +87,7 @@
   #define TEMP_1_PIN                          15  // Analog Input
 #endif
 
-#if TEMP_SENSOR_BED == -1
+#if TEMP_SENSOR_BED0 == -1
   #define TEMP_BED_PIN                         8  // Analog Input
 #else
   #define TEMP_BED_PIN                        14  // Analog Input

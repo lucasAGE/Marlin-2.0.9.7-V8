@@ -46,21 +46,17 @@
 #endif
 
 /*#################################### TCC LUCAS ####################################*/
-#include <Adafruit_ADS1X15.h>
-#include <PCF8574.h>
+#if ADS1115_BED_READINGS || PCF8574_BED_CONTROL
+  #include <Wire.h>
+#endif
 
-// --- ADS1115 handler object ---
-extern Adafruit_ADS1115 bedADS;
-extern PCF8574 bedPCF;
+#if ADS1115_BED_READINGS
+  #include <Adafruit_ADS1X15.h>    
+#endif
 
-// Initialize ADS1115 for multi-bed temperature reading
-void init_wireI2C();
-void init_ads1115();
-void init_pcf8574();
-
-// Read temperature (in °C) from bed index [0..3] using ADS1115
-float read_bed_temp_ads(uint8_t bed_index);
-
+#if PCF8574_BED_CONTROL   
+  #include <PCF8574.h>
+#endif
 
 #define HOTEND_INDEX TERN(HAS_MULTI_HOTEND, e, 0)
 #define E_NAME TERN_(HAS_MULTI_HOTEND, e)
@@ -528,6 +524,11 @@ class Temperature {
       static constexpr millis_t fan_update_interval_ms = TERN(HAS_PWMFANCHECK, 5000, TERN(HAS_FANCHECK, 1000, 2500));
     #endif
 
+    /*#################################### TCC LUCAS ####################################*/
+    #if ADS1115_BED_READINGS    
+      static float readBedTempAds(uint8_t bed_index); //Read temperature (°C) from ADS1115
+    #endif
+
   private:
 
     #if ENABLED(WATCH_HOTENDS)
@@ -553,6 +554,25 @@ class Temperature {
       #endif
       IF_DISABLED(PIDTEMPBED, static millis_t next_bed_check_ms);
       static raw_adc_t mintemp_raw_BED, maxtemp_raw_BED;
+    #endif
+
+    /*#################################### TCC LUCAS ####################################*/
+    #if ADS1115_BED_READINGS || PCF8574_BED_CONTROL
+      static void initWireI2C();
+    #endif
+
+    #if ADS1115_BED_READINGS
+      /** ADS1115 for multi-bed temperature readings */
+      static Adafruit_ADS1115 bedADS;
+      /** Initialize ADS1115 hardware */
+      static void initADS1115();      
+    #endif
+
+    #if PCF8574_BED_CONTROL
+      /** PCF8574 for multi-bed heater outputs */
+      static PCF8574 bedPCF;
+      /** Initialize PCF8574 expander */
+      static void initPCF8574();
     #endif
 
     #if HAS_HEATED_CHAMBER

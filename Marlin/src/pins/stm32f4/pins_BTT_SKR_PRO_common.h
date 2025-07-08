@@ -246,7 +246,7 @@
 #else
   #define TEMP_2_PIN                        PF6   // T3 <-> E2
 #endif
-#if TEMP_SENSOR_BED_IS_AD8495 || TEMP_SENSOR_BED == 20
+#if TEMP_SENSOR_BED_IS_AD8495 || TEMP_SENSOR_BED0 == 20
   #define TEMP_BED_PIN                      PF7
 #else
   #define TEMP_BED_PIN                      PF3   // T0 <-> Bed

@@ -101,7 +101,7 @@
   #define HOTEND7_BETA                    3950 // Beta value
 #endif
 
-#if TEMP_SENSOR_BED == 1000
+#if TEMP_SENSOR_BED0 == 1000
   #define BED_PULLUP_RESISTOR_OHMS        4700 // Pullup resistor
   #define BED_RESISTANCE_25C_OHMS       100000 // Resistance at 25C
   #define BED_BETA                        3950 // Beta value
@@ -160,8 +160,8 @@
  */
 //#define HEPHESTOS2_HEATED_BED_KIT
 #if ENABLED(HEPHESTOS2_HEATED_BED_KIT)
-  #undef TEMP_SENSOR_BED
-  #define TEMP_SENSOR_BED 70
+  #undef TEMP_SENSOR_BED0
+  #define TEMP_SENSOR_BED0 70
   #define HEATER_BED_INVERTING true
 #endif
 

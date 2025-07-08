@@ -181,7 +181,7 @@ void menu_info_thermistors() {
 
   #if HAS_HEATED_BED
     #undef THERMISTOR_ID
-    #define THERMISTOR_ID TEMP_SENSOR_BED
+    #define THERMISTOR_ID TEMP_SENSOR_BED0
     #include "../thermistornames.h"
     STATIC_ITEM_F(F("BED: " THERMISTOR_NAME), SS_INVERT);
     PSTRING_ITEM(MSG_INFO_MIN_TEMP, STRINGIFY(BED_MINTEMP), SS_LEFT);

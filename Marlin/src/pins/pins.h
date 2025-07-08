@@ -49,12 +49,12 @@
   #elif MB(RAMPS_13_SF,  RAMPS_14_SF,  RAMPS_PLUS_SF,  RAMPS_14_RE_ARM_SF,  RAMPS_SMART_SF,  RAMPS_DUO_SF,  RAMPS4DUE_SF)
     #define FET_ORDER_SF 1
   #elif HAS_MULTI_HOTEND || (HAS_EXTRUDERS && HAS_CUTTER)
-    #if TEMP_SENSOR_BED
+    #if TEMP_SENSOR_BED0
       #define FET_ORDER_EEB 1
     #else
       #define FET_ORDER_EEF 1
     #endif
-  #elif TEMP_SENSOR_BED
+  #elif TEMP_SENSOR_BED0
     #define FET_ORDER_EFB 1
   #else
     #define FET_ORDER_EFF 1
