@@ -190,6 +190,46 @@
   #include "servo.h"
 #endif
 
+/*#################################### TCC LUCAS ####################################*/
+#include <Wire.h>
+
+// I2C address for ADS1115
+#define ADS_I2C_ADDRESS   0x48
+#define PCF_I2C_ADDRESS   0x20
+
+// Instantiate ADS1115
+Adafruit_ADS1115 bedADS;
+PCF8574 bedPCF(PCF_I2C_ADDRESS, &Wire);
+
+void init_wireI2C(){
+  Wire.begin();
+}
+
+void init_ads1115() {  
+  bedADS.begin(ADS_I2C_ADDRESS, &Wire);
+
+  // Configure ADS gain and data rate
+  bedADS.setGain(GAIN_ONE);       // ±4.096V full-scale range
+  bedADS.setDataRate(RATE_ADS1115_128SPS);
+}
+
+void init_pcf8574() { 
+  bedPCF.begin(0x00);// Configura todos os pinos como OUTPUT e desligados  
+}
+
+float read_bed_temp_ads(uint8_t bed_index) {
+  if (bed_index > 3) return NAN;
+
+  // Read raw ADC from channel A0..A3
+  int16_t raw = bedADS.readADC_SingleEnded(bed_index);  
+
+  SERIAL_ECHOPGM("Cama ");SERIAL_ECHO(bed_index);
+  SERIAL_ECHOPGM(" Raw:");SERIAL_ECHO(raw);
+  return raw;
+}
+
+
+
 #if ANY(TEMP_SENSOR_0_IS_THERMISTOR, TEMP_SENSOR_1_IS_THERMISTOR, TEMP_SENSOR_2_IS_THERMISTOR, TEMP_SENSOR_3_IS_THERMISTOR, \
         TEMP_SENSOR_4_IS_THERMISTOR, TEMP_SENSOR_5_IS_THERMISTOR, TEMP_SENSOR_6_IS_THERMISTOR, TEMP_SENSOR_7_IS_THERMISTOR )
   #define HAS_HOTEND_THERMISTOR 1

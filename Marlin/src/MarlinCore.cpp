@@ -1341,6 +1341,12 @@ void setup() {
 
   sync_plan_position();               // Vital to init stepper/planner equivalent for current_position
 
+  /*#################################### TCC LUCAS ####################################*/
+
+  init_wireI2C();
+  init_ads1115();
+  init_pcf8574();
+
   SETUP_RUN(thermalManager.init());   // Initialize temperature loop
 
   SETUP_RUN(print_job_timer.init());  // Initial setup of print job timer
@@ -1646,8 +1652,26 @@ void setup() {
  *    as long as idle() or manage_inactivity() are being called.
  */
 void loop() {
+
+  static uint32_t lastADS = 0;
+
   do {
     idle();
+
+    {
+      uint32_t now = millis();
+      if (now - lastADS > 1000) {
+        lastADS = now;
+        for (uint8_t i = 0; i < 4; i++) {
+          float t = read_bed_temp_ads(i);
+          SERIAL_ECHOPGM("Bed ");
+          SERIAL_ECHO(i);
+          SERIAL_ECHOPGM(" = ");
+          SERIAL_ECHO(t);
+          SERIAL_ECHOLNPGM(" C");
+        }
+      }
+    }
 
     #if ENABLED(SDSUPPORT)
       if (card.flag.abort_sd_printing) abortSDPrinting();

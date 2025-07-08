@@ -45,6 +45,23 @@
   #define SOFT_PWM_SCALE 0
 #endif
 
+/*#################################### TCC LUCAS ####################################*/
+#include <Adafruit_ADS1X15.h>
+#include <PCF8574.h>
+
+// --- ADS1115 handler object ---
+extern Adafruit_ADS1115 bedADS;
+extern PCF8574 bedPCF;
+
+// Initialize ADS1115 for multi-bed temperature reading
+void init_wireI2C();
+void init_ads1115();
+void init_pcf8574();
+
+// Read temperature (in °C) from bed index [0..3] using ADS1115
+float read_bed_temp_ads(uint8_t bed_index);
+
+
 #define HOTEND_INDEX TERN(HAS_MULTI_HOTEND, e, 0)
 #define E_NAME TERN_(HAS_MULTI_HOTEND, e)
 
