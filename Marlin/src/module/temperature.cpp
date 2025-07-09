@@ -222,38 +222,26 @@
       // Configure ADS gain and data rate
       bedADS.setGain(GAIN_ONE);       // ±4.096V full-scale range
       bedADS.setDataRate(RATE_ADS1115_128SPS);
-    }
+    } 
 
-    // Timestamp da última leitura do ADS1115
-    static millis_t last_ads_write_ms = 0;
-
-    void Temperature::read_bed_temperatures_ADS1115() {    
-      int16_t raw16[BED_COUNT];
-
-      // Leitura ADS1115  
+    void Temperature::read_bed_temperatures_ADS1115() {
+      int16_t raw16;
       for (uint8_t i = 0; i < BED_COUNT; ++i) {
-        raw16[i] = bedADS.readADC_SingleEnded(i);
-      }
-      
-      //Conversao valor 16bits para 10bits
-      for (uint8_t i = 0; i < BED_COUNT; ++i) {
-        // Se veio negativo, torna positivo
-        int16_t val = raw16[i];
-        if (val < 0) val = -val;
+        raw16 = bedADS.readADC_SingleEnded(i);
+        // Garante valor positivo
+        if (raw16 < 0) raw16 = -raw16;
 
-        // Converte de 16 bits para 10 bits
-        uint16_t raw10 = (uint16_t)val >> 6;
+        // 16 → 10 bits
+        uint16_t raw10 = uint16_t(raw16) >> 6;
 
-        // Debug via serial
-        SERIAL_ECHOPGM("Cama ");
-        SERIAL_ECHO(i);
-        SERIAL_ECHOPGM(" Raw16: ");
-        SERIAL_ECHO(raw16[i]);
-        SERIAL_ECHOPGM(" Ajustado: ");
-        SERIAL_ECHO(val);
-        SERIAL_ECHOPGM(" Raw10: ");
-        SERIAL_ECHO(raw10);
-        SERIAL_EOL();        
+        // Armazena para a conversão posterior
+        temp_bed[i].setraw(raw10);
+
+        // Opcional: debug, só se quiser
+        #if SERIAL_MULTI_BEDS
+          SERIAL_ECHOPGM("Cama "); SERIAL_ECHO(i);
+          SERIAL_ECHOPGM(" Raw10: "); SERIAL_ECHOLN(raw10);          
+        #endif
       }
     } 
   #endif
@@ -276,6 +264,16 @@
       const millis_t now = millis();
       if (now - last_pcf_write_ms < PCF8574_WRITE_INTERVAL_MS) return;
       last_pcf_write_ms = now;
+
+      #if SERIAL_MULTI_BEDS
+        // Exibe cada bit das camas 0..3
+        SERIAL_ECHOPGM("Beds: [");
+        for (uint8_t b = 0; b < 4; ++b) {
+          SERIAL_ECHO(((state >> b) & 1) ? '1' : '0');
+          if (b < 3) SERIAL_ECHOPGM(",");
+        }
+        SERIAL_ECHOLNPGM("] ");           
+      #endif
 
       Wire.beginTransmission(PCF8574_ADDRESS);
       Wire.write(state);
@@ -1711,9 +1709,17 @@ void Temperature::min_temp_error(const heater_id_t heater_id) {
 
     void Temperature::manage_all_heated_beds(const millis_t &ms) {
       for (uint8_t b = 0; b < BED_COUNT; ++b){
-        manage_heated_bed(b, ms);  
-      }
-      write_bed_PCF8574_state(bed_pcf_state);      
+        manage_heated_bed(b, ms);
+
+        #if SERIAL_MULTI_BEDS
+          SERIAL_ECHOPGM("Bed ");
+          SERIAL_ECHO(b);         
+          SERIAL_ECHOPGM(" | PWM: ");
+          SERIAL_ECHO(temp_bed[b].soft_pwm_amount);
+          SERIAL_ECHOLN(" ");  // pula linha
+        #endif
+
+      }           
     }
 
   #else //Single Bed Fallback
@@ -1995,7 +2001,11 @@ void Temperature::min_temp_error(const heater_id_t heater_id) {
  *  - Update the heated bed PID output value
  */
 void Temperature::task() {
+
+  #if SERIAL_MULTI_BEDS
   SERIAL_ECHOLNPGM("temperature task iniciado.");
+  #endif
+  
   if (marlin_state == MF_INITIALIZING) return hal.watchdog_refresh(); // If Marlin isn't started, at least reset the watchdog!
 
   static bool no_reentry = false;  // Prevent recursion
@@ -2055,6 +2065,7 @@ void Temperature::task() {
   #if HAS_HEATED_BED
       #if HAS_MULTI_BEDS
         manage_all_heated_beds(ms);
+        write_bed_PCF8574_state(bed_pcf_state);
       #else //Single Bed Fallback
         manage_heated_bed(ms);
       #endif 
@@ -2485,10 +2496,27 @@ void Temperature::updateTemperaturesFromRawValues() {
 
   /*#################################### TCC LUCAS ####################################*/
   #if HAS_MULTI_BEDS
+
+    #if SERIAL_MULTI_BEDS
+      // Cabeçalho de depuração
+      SERIAL_ECHOPGM("Beds °C: [");
+    #endif
+
     // Para cada cama, converte o raw de 10 bits em °C
     for (uint8_t b = 0; b < BED_COUNT; ++b) {
       temp_bed[b].celsius = analog_to_celsius_bed(temp_bed[b].getraw());
+      float c = temp_bed[b].celsius;
+
+      #if SERIAL_MULTI_BEDS        
+        SERIAL_ECHO(c);
+        if (b < BED_COUNT - 1) SERIAL_ECHOPGM(", ");
+      #endif
       }
+
+      #if SERIAL_MULTI_BEDS
+      SERIAL_ECHOLNPGM("]");      
+      #endif
+      
     #elif HAS_HEATED_BED
       // Single-bed
       temp_bed.celsius = analog_to_celsius_bed(temp_bed.getraw());
@@ -3409,15 +3437,13 @@ void Temperature::update_raw_temperatures() {
   #if ADS1115_BED_READING
     static millis_t last_ads_read_ms = 0;
     const millis_t now = millis();
-    if (now - last_ads_read_ms < ADS1115_WRITE_INTERVAL_MS) return;
-    last_ads_read_ms = now;
-
-    read_bed_temperatures_ADS1115();
+    if (now - last_ads_read_ms >= ADS1115_WRITE_INTERVAL_MS) {
+      last_ads_read_ms = now;
+      read_bed_temperatures_ADS1115(); // popula temp_bed[b].raw internamente
+    }
   #elif HAS_TEMP_ADC_BED
-    // Single-bed: continua lendo do pino analógico
     temp_bed.update();
   #endif
-
 
   TERN_(HAS_TEMP_ADC_CHAMBER, temp_chamber.update());
   TERN_(HAS_TEMP_ADC_PROBE,   temp_probe.update());
@@ -3454,8 +3480,7 @@ void Temperature::readings_ready() {
       // Reset em todas as camas antes de começar a amostragem
       for (uint8_t b = 0; b < BED_COUNT; ++b) 
         temp_bed[b].reset();
-    #else
-      // Single-bed
+    #else// Single-bed Fallback      
       temp_bed.reset();
     #endif
   #endif 

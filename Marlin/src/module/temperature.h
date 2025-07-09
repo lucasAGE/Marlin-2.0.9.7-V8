@@ -575,6 +575,7 @@ class Temperature {
     #endif
 
     #if ADS1115_BED_READING
+       static uint16_t raw_ads[BED_COUNT];
       /** ADS1115 for multi-bed temperature readings */
       static Adafruit_ADS1115 bedADS;
       /** Initialize ADS1115 hardware */
