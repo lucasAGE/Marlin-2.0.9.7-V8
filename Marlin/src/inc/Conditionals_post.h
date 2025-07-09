@@ -592,14 +592,20 @@
     #endif
   #endif
 #endif
-
-#ifndef MULTI_BED_COUNT
-  #define MULTI_BED_COUNT ( \
+/*#################################### TCC LUCAS ####################################*/
+#ifndef BED_COUNT
+  #define BED_COUNT ( \
       (TEMP_SENSOR_BED0 > 0 ? 1 : 0) + \
       (TEMP_SENSOR_BED1 > 0 ? 1 : 0) + \
       (TEMP_SENSOR_BED2 > 0 ? 1 : 0) + \
       (TEMP_SENSOR_BED3 > 0 ? 1 : 0) )
 #endif
+
+#if BED_COUNT > 1
+  #define HAS_MULTI_BEDS 1
+#else
+  #define HAS_MULTI_BEDS 0
+#endif  
 
 /**
  * Compatibility layer for MAX (SPI) temp boards
@@ -2461,7 +2467,7 @@
 #if HAS_HOTEND && HAS_TEMP(0)
   #define HAS_TEMP_HOTEND 1
 #endif
-#if HAS_TEMP(BED)
+#if TEMP_SENSOR_BED0 > 0
   #define HAS_TEMP_BED 1
 #endif
 #if HAS_TEMP(CHAMBER)

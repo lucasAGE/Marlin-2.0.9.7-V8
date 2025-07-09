@@ -975,7 +975,7 @@ namespace ExtUI {
     }
 
     void startBedPIDTune(const celsius_t temp) {
-      thermalManager.PID_autotune(temp, H_BED, 4, true);
+      thermalManager.PID_autotune(temp, H_BED0, 4, true);
     }
   #endif
 

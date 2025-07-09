@@ -127,7 +127,7 @@ void draw_heater_status(uint16_t x, uint16_t y, const int8_t Heater) {
     targetTemperature = thermalManager.degTargetHotend(Heater);
   }
   #if HAS_HEATED_BED
-    else if (Heater == H_BED) {
+    else if (Heater == H_BED0) {
       currentTemperature = thermalManager.wholeDegBed();
       targetTemperature = thermalManager.degTargetBed();
     }
@@ -160,7 +160,7 @@ void draw_heater_status(uint16_t x, uint16_t y, const int8_t Heater) {
     if (currentTemperature >= 50) Color = COLOR_HOTEND;
   }
   #if HAS_HEATED_BED
-    else if (Heater == H_BED) {
+    else if (Heater == H_BED0) {
       if (currentTemperature >= 50) Color = COLOR_HEATED_BED;
       image = targetTemperature > 0 ? imgBedHeated : imgBed;
     }
@@ -237,7 +237,7 @@ void MarlinUI::draw_status_screen() {
         case ITEM_E2: draw_heater_status(x, y, H_E2); break;
       #endif
       #ifdef ITEM_BED
-        case ITEM_BED: draw_heater_status(x, y, H_BED); break;
+        case ITEM_BED: draw_heater_status(x, y, H_BED0); break;
       #endif
       #ifdef ITEM_CHAMBER
         case ITEM_CHAMBER: draw_heater_status(x, y, H_CHAMBER); break;

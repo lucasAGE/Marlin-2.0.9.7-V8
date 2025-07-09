@@ -135,7 +135,7 @@ namespace DGUS_Data {
   };
 
   enum class HeaterIcon : uint16_t {
-    BED = 1U << 0,
+    BED0 = 1U << 0,
     H0  = 1U << 1,
     H1  = 1U << 2
   };

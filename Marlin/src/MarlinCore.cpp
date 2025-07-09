@@ -1648,26 +1648,8 @@ void setup() {
  *    as long as idle() or manage_inactivity() are being called.
  */
 void loop() {
-
-  static uint32_t lastADS = 0;
-
   do {
-    idle();
-
-    {
-      uint32_t now = millis();
-      if (now - lastADS > 1000) {
-        lastADS = now;
-        for (uint8_t i = 0; i < MULTI_BED_COUNT; i++) {
-          float t = Temperature::readBedTempAds(i);
-          SERIAL_ECHOPGM("Bed ");
-          SERIAL_ECHO(i);
-          SERIAL_ECHOPGM(" = ");
-          SERIAL_ECHO(t);
-          SERIAL_ECHOLNPGM(" C");
-        }
-      }
-    }
+    idle();    
 
     #if ENABLED(SDSUPPORT)
       if (card.flag.abort_sd_printing) abortSDPrinting();

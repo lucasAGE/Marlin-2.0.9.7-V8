@@ -588,7 +588,16 @@ namespace Language_en {
   LSTR MSG_HEATING                        = _UxGT("Heating...");
   LSTR MSG_COOLING                        = _UxGT("Cooling...");
   LSTR MSG_BED_HEATING                    = _UxGT("Bed Heating...");
+  LSTR MSG_BED_HEATING1                   = _UxGT("Bed 1 Heating...");
+  LSTR MSG_BED_HEATING2                   = _UxGT("Bed 2 Heating...");
+  LSTR MSG_BED_HEATING3                   = _UxGT("Bed 3 Heating...");
+  LSTR MSG_BED_HEATING4                   = _UxGT("Bed 4 Heating...");
+  LSTR MSG_ALL_BEDS_HEATING               = _UxGT("All Beds Heating...");
   LSTR MSG_BED_COOLING                    = _UxGT("Bed Cooling...");
+  LSTR MSG_BED_COOLING1                   = _UxGT("Bed 1 Cooling ...");
+  LSTR MSG_BED_COOLING2                   = _UxGT("Bed 2 Cooling...");
+  LSTR MSG_BED_COOLING3                   = _UxGT("Bed 3 Cooling...");
+  LSTR MSG_BED_COOLING4                   = _UxGT("Bed 4 Cooling...");
   LSTR MSG_PROBE_HEATING                  = _UxGT("Probe Heating...");
   LSTR MSG_PROBE_COOLING                  = _UxGT("Probe Cooling...");
   LSTR MSG_CHAMBER_HEATING                = _UxGT("Chamber Heating...");

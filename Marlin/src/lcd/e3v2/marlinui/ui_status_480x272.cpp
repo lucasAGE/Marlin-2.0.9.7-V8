@@ -332,7 +332,7 @@ void MarlinUI::draw_status_screen() {
     hx += STATUS_HEATERS_XSPACE;
   #endif
   #if HAS_HEATED_BED
-    _draw_heater_status(H_BED, hx, STATUS_HEATERS_Y);
+    _draw_heater_status(H_BED0, hx, STATUS_HEATERS_Y);
   #endif
 
   #if HAS_FAN

@@ -364,7 +364,16 @@ namespace Language_pt_br {
   LSTR MSG_HEATING                        = _UxGT("Aquecendo...");
   LSTR MSG_COOLING                        = _UxGT("Resfriando...");
   LSTR MSG_BED_HEATING                    = _UxGT("Aquecendo mesa...");
+  LSTR MSG_BED_HEATING1                   = _UxGT("Aquecendo mesa 1...");
+  LSTR MSG_BED_HEATING2                   = _UxGT("Aquecendo mesa 2...");
+  LSTR MSG_BED_HEATING3                   = _UxGT("Aquecendo mesa 3...");
+  LSTR MSG_BED_HEATING4                   = _UxGT("Aquecendo mesa 4...");
+  LSTR MSG_ALL_BEDS_HEATING               = _UxGT("Aquecendo as mesas...");
   LSTR MSG_BED_COOLING                    = _UxGT("Esfriando mesa...");
+  LSTR MSG_BED_COOLING1                   = _UxGT("Esfriando mesa 1...");
+  LSTR MSG_BED_COOLING2                   = _UxGT("Esfriando mesa 2...");
+  LSTR MSG_BED_COOLING3                   = _UxGT("Esfriando mesa 3...");
+  LSTR MSG_BED_COOLING4                   = _UxGT("Esfriando mesa 4...");
   LSTR MSG_CHAMBER_HEATING                = _UxGT("Aquecendo Câmara...");
   LSTR MSG_CHAMBER_COOLING                = _UxGT("Esfriando Câmara...");
   LSTR MSG_DELTA_CALIBRATE                = _UxGT("Calibrar Delta");

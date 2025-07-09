@@ -884,7 +884,7 @@ void DGUSRxHandler::PIDRun(DGUS_VP &vp, void *data_ptr) {
     default: return;
     case DGUS_Data::Heater::BED:
       #if ENABLED(PIDTEMPBED)
-        heater = H_BED;
+        heater = H_BED0;
         break;
       #else
         dgus_screen_handler.SetStatusMessage(F("Bed PID disabled"));

@@ -3579,7 +3579,7 @@ void HMI_AdvSet() {
 
       #if HAS_HEATED_BED
         case ADVSET_CASE_BEDPID:
-          thermalManager.PID_autotune(ui.material_preset[0].bed_temp, H_BED, 10, true);
+          thermalManager.PID_autotune(ui.material_preset[0].bed_temp, H_BED0, 10, true);
           break;
       #endif
 

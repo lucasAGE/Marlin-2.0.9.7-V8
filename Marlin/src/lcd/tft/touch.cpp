@@ -197,7 +197,7 @@ void Touch::touch(touch_control_t *control) {
         }
       #endif
       #if HAS_HEATED_BED
-        else if (heater == H_BED) {
+        else if (heater == H_BED0) {
           MenuItem_int3::action(GET_TEXT_F(MSG_BED), &thermalManager.temp_bed.target, 0, BED_MAX_TARGET, thermalManager.start_watching_bed);
         }
       #endif

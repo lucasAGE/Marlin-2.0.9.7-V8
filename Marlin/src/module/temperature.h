@@ -46,11 +46,11 @@
 #endif
 
 /*#################################### TCC LUCAS ####################################*/
-#if ADS1115_BED_READINGS || PCF8574_BED_CONTROL
+#if ADS1115_BED_READING || PCF8574_BED_CONTROL
   #include <Wire.h>
 #endif
 
-#if ADS1115_BED_READINGS
+#if ADS1115_BED_READING
   #include <Adafruit_ADS1X15.h>    
 #endif
 
@@ -68,7 +68,14 @@ typedef enum : int8_t {
   H_PROBE = HID_PROBE,
   H_BOARD = HID_BOARD,
   H_CHAMBER = HID_CHAMBER,
-  H_BED = HID_BED,
+  H_BED0 = HID_BED0,  //-1
+
+  #if ENABLED(HAS_MULTI_BEDS)
+    H_BED1 = HID_BED1,  // -2
+    H_BED2 = HID_BED2,  // -3
+    H_BED3 = HID_BED3,  // -4      
+  #endif
+
   H_E0 = HID_E0, H_E1, H_E2, H_E3, H_E4, H_E5, H_E6, H_E7,
   H_NONE = -128
 } heater_id_t;
@@ -129,7 +136,9 @@ enum ADCSensorState : char {
     PrepareTemp_0, MeasureTemp_0,
   #endif
   #if HAS_TEMP_ADC_BED
+    #if DISABLED(HAS_MULTI_BEDS)
     PrepareTemp_BED, MeasureTemp_BED,
+    #endif
   #endif
   #if HAS_TEMP_ADC_CHAMBER
     PrepareTemp_CHAMBER, MeasureTemp_CHAMBER,
@@ -406,8 +415,11 @@ class Temperature {
       static const celsius_t hotend_maxtemp[HOTENDS];
       static celsius_t hotend_max_target(const uint8_t e) { return hotend_maxtemp[e] - (HOTEND_OVERSHOOT); }
     #endif
-    #if HAS_HEATED_BED
-      static bed_info_t temp_bed;
+
+    /*#################################### TCC LUCAS ####################################*/
+
+    #if HAS_TEMP_BED     
+      static bed_info_t temp_bed[BED_COUNT];         
     #endif
     #if HAS_TEMP_PROBE
       static probe_info_t temp_probe;
@@ -496,14 +508,14 @@ class Temperature {
         REPEAT(HOTENDS, _IDLE_INDEX_E)
         #undef _IDLE_INDEX_E
 
-        OPTARG(HAS_HEATED_BED, IDLE_INDEX_BED)
+        OPTARG(HAS_HEATED_BED, IDLE_INDEX_BED)              
 
         , NR_HEATER_IDLE
       };
 
       // Convert the given heater_id_t to idle array index
       static IdleIndex idle_index_for_id(const int8_t heater_id) {
-        TERN_(HAS_HEATED_BED, if (heater_id == H_BED) return IDLE_INDEX_BED);
+        TERN_(HAS_HEATED_BED, if (heater_id == H_BED0) return IDLE_INDEX_BED);
         return (IdleIndex)_MAX(heater_id, 0);
       }
 
@@ -522,12 +534,7 @@ class Temperature {
 
     #if HAS_FAN_LOGIC
       static constexpr millis_t fan_update_interval_ms = TERN(HAS_PWMFANCHECK, 5000, TERN(HAS_FANCHECK, 1000, 2500));
-    #endif
-
-    /*#################################### TCC LUCAS ####################################*/
-    #if ADS1115_BED_READINGS    
-      static float readBedTempAds(uint8_t bed_index); //Read temperature (°C) from ADS1115
-    #endif
+    #endif   
 
   private:
 
@@ -548,24 +555,31 @@ class Temperature {
       static temp_range_t temp_range[HOTENDS];
     #endif
 
-    #if HAS_HEATED_BED
-      #if ENABLED(WATCH_BED)
-        static bed_watch_t watch_bed;
-      #endif
-      IF_DISABLED(PIDTEMPBED, static millis_t next_bed_check_ms);
-      static raw_adc_t mintemp_raw_BED, maxtemp_raw_BED;
-    #endif
-
     /*#################################### TCC LUCAS ####################################*/
-    #if ADS1115_BED_READINGS || PCF8574_BED_CONTROL
+    #if HAS_HEATED_BED          
+      #if ENABLED(WATCH_BED)        
+          static bed_watch_t watch_bed[BED_COUNT];      
+      #endif
+
+      #if DISABLED(PIDTEMPBED)        
+        static millis_t next_bed_check_ms[BED_COUNT];       
+      #endif
+
+      #if HAS_MULTI_BEDS
+        static raw_adc_t mintemp_raw_BED[BED_COUNT], maxtemp_raw_BED[BED_COUNT];
+      #endif
+    #endif
+    
+    #if ADS1115_BED_READING || PCF8574_BED_CONTROL
       static void initWireI2C();
     #endif
 
-    #if ADS1115_BED_READINGS
+    #if ADS1115_BED_READING
       /** ADS1115 for multi-bed temperature readings */
       static Adafruit_ADS1115 bedADS;
       /** Initialize ADS1115 hardware */
       static void initADS1115();      
+      static void read_bed_temperatures_ADS1115();
     #endif
 
     #if PCF8574_BED_CONTROL
@@ -573,6 +587,7 @@ class Temperature {
       static PCF8574 bedPCF;
       /** Initialize PCF8574 expander */
       static void initPCF8574();
+      static void write_bed_PCF8574_state(const uint8_t state);
     #endif
 
     #if HAS_HEATED_CHAMBER
@@ -675,7 +690,7 @@ class Temperature {
 
     #if HAS_HOTEND
       static celsius_float_t analog_to_celsius_hotend(const raw_adc_t raw, const uint8_t e);
-    #endif
+    #endif   
     #if HAS_HEATED_BED
       static celsius_float_t analog_to_celsius_bed(const raw_adc_t raw);
     #endif
@@ -850,36 +865,110 @@ class Temperature {
     #endif // HAS_HOTEND
 
     #if HAS_HEATED_BED
+      #if HAS_MULTI_BEDS
 
-      #if ENABLED(SHOW_TEMP_ADC_VALUES)
-        static raw_adc_t rawBedTemp()  { return temp_bed.getraw(); }
-      #endif
-      static celsius_float_t degBed()  { return temp_bed.celsius; }
-      static celsius_t wholeDegBed()   { return static_cast<celsius_t>(degBed() + 0.5f); }
-      static celsius_t degTargetBed()  { return temp_bed.target; }
-      static bool isHeatingBed()       { return temp_bed.target > temp_bed.celsius; }
-      static bool isCoolingBed()       { return temp_bed.target < temp_bed.celsius; }
-      static bool degBedNear(const celsius_t temp) {
-        return ABS(wholeDegBed() - temp) < (TEMP_BED_HYSTERESIS);
-      }
+        #if ENABLED(SHOW_TEMP_ADC_VALUES)
+          static raw_adc_t rawBedTemp(const uint8_t bed) { return temp_bed[bed].getraw(); }
+        #endif
+        static celsius_float_t degBed(const uint8_t bed) { return temp_bed[bed].celsius; }
+        static celsius_t wholeDegBed(const uint8_t bed) { return static_cast<celsius_t>(degBed(bed) + 0.5f); }
+        static celsius_t degTargetBed(const uint8_t bed) { return temp_bed[bed].target; }
+       
+        static bool isHeatingBed(const uint8_t bed) { return temp_bed[bed].target > temp_bed[bed].celsius; }
+        static bool isAnyHeatingBed() {
+        for (uint8_t b = 0; b < BED_COUNT; b++)
+          if (isHeatingBed(b)) return true;
+        return false;
+       }
+    
+        static bool isCoolingBed(const uint8_t bed) { return temp_bed[bed].target < temp_bed[bed].celsius; }
+        static bool isAnyCoolingBed() {
+        for (uint8_t b = 0; b < BED_COUNT; b++)
+          if (isCoolingBed(b)) return true;
+        return false;
+        }
 
-      // Start watching the Bed to make sure it's really heating up
-      static void start_watching_bed() { TERN_(WATCH_BED, watch_bed.restart(degBed(), degTargetBed())); }
+        static bool degBedNear(const uint8_t bed, const celsius_t temp) {
+        return ABS(wholeDegBed(bed) - temp) < TEMP_BED_HYSTERESIS;
+        }
+        static bool degAllBedsNear(const celsius_t temp) {
+          for (uint8_t b = 0; b < BED_COUNT; ++b) {
+            if (!degBedNear(b, temp)) return false;
+          }
+          return true;
+        }
 
-      static void setTargetBed(const celsius_t celsius) {
-        TERN_(AUTO_POWER_CONTROL, if (celsius) powerManager.power_on());
-        temp_bed.target = _MIN(celsius, BED_MAX_TARGET);
-        start_watching_bed();
-      }
 
-      static bool wait_for_bed(const bool no_wait_for_cooling=true
-        OPTARG(G26_CLICK_CAN_CANCEL, const bool click_to_cancel=false)
-      );
+        // Start watching a Bed to make sure it's really heating up
+        static void start_watching_bed(const uint8_t bed) {
+        TERN_(WATCH_BED, watch_bed[bed].restart(degBed(bed), degTargetBed(bed)));
+        }
+        // Start watching all Bed to make sure it's really heating up
+        static void start_watching_all_beds() {
+        for (uint8_t b = 0; b < BED_COUNT; b++)
+          start_watching_bed(b);
+        }
 
-      static void wait_for_bed_heating();
+        static void setTargetBed(const uint8_t bed,const celsius_t celsius) {
+          if (bed >= BED_COUNT) return;
+          TERN_(AUTO_POWER_CONTROL, if (celsius) powerManager.power_on());
+          temp_bed[bed].target = _MIN(celsius, BED_MAX_TARGET);          
+          start_watching_bed(bed);
+        }
 
-      static void manage_heated_bed(const millis_t &ms);
+        static void setAllTargetBed(const celsius_t celsius) {
+          for (uint8_t b = 0; b < BED_COUNT; ++b) {
+            setTargetBed(b, celsius);
+          }
+        }
 
+        static bool wait_for_bed(
+        const uint8_t       bed,
+        bool          no_wait_for_cooling = true,
+        bool          click_to_cancel      = false
+        );
+
+        static bool wait_for_all_beds(bool no_wait_for_cooling=true, bool click_to_cancel=false);
+
+        static void wait_for_bed_heating(const uint8_t bed);
+
+        static void wait_for_all_beds_heating();
+
+        static void manage_heated_bed(const uint8_t bed,const millis_t &ms);
+        static void manage_all_heated_beds(const millis_t &ms);
+
+      #else //single bed Fallback
+
+        #if ENABLED(SHOW_TEMP_ADC_VALUES)
+          static raw_adc_t rawBedTemp()  { return temp_bed.getraw(); }
+        #endif
+        static celsius_float_t degBed()  { return temp_bed.celsius; }
+        static celsius_t wholeDegBed()   { return static_cast<celsius_t>(degBed() + 0.5f); }
+        static celsius_t degTargetBed()  { return temp_bed.target; }
+        static bool isHeatingBed()       { return temp_bed.target > temp_bed.celsius; }
+        static bool isCoolingBed()       { return temp_bed.target < temp_bed.celsius; }
+        static bool degBedNear(const celsius_t temp) {
+          return ABS(wholeDegBed() - temp) < (TEMP_BED_HYSTERESIS);
+        }
+
+        // Start watching the Bed to make sure it's really heating up
+        static void start_watching_bed() { TERN_(WATCH_BED, watch_bed.restart(degBed(), degTargetBed())); }
+
+        static void setTargetBed(const celsius_t celsius) {
+          TERN_(AUTO_POWER_CONTROL, if (celsius) powerManager.power_on());
+          temp_bed.target = _MIN(celsius, BED_MAX_TARGET);
+          start_watching_bed();
+        }
+
+        static bool wait_for_bed(const bool no_wait_for_cooling=true
+          OPTARG(G26_CLICK_CAN_CANCEL, const bool click_to_cancel=false)
+        );
+
+        static void wait_for_bed_heating();
+
+        static void manage_heated_bed(const millis_t &ms);
+
+      #endif //HAS_MULTI_BEDS
     #endif // HAS_HEATED_BED
 
     #if HAS_TEMP_PROBE
@@ -1058,10 +1147,30 @@ class Temperature {
     #endif
 
   private:
+    /**
+     * Leitura e conversão das temperaturas brutas (ADC → Celsius).
+     *
+     * - raw_temps_ready: flag volátil que indica se as leituras brutas dos sensores (raw ADC)
+     *   já foram realizadas e estão prontas para serem convertidas em temperatura real.
+     *
+     * - update_raw_temperatures(): função que realiza a leitura dos sensores e preenche os valores brutos.
+     *   Esta função é normalmente chamada em interrupções ou no início do ciclo térmico principal.
+     *
+     * - updateTemperaturesFromRawValues(): converte os valores brutos de todos os sensores (inclusive hotends,
+     *   cama(s), câmara, etc.) para temperaturas em Celsius, preenchendo as variáveis `celsius` correspondentes.
+     *
+     * - updateTemperaturesIfReady(): função auxiliar que verifica se `raw_temps_ready` está true.
+     *   Se estiver, chama `updateTemperaturesFromRawValues()`, reseta a flag e retorna true.
+     *   Caso contrário, retorna false sem fazer nada.
+     *
+     * Essa estrutura permite que a conversão só ocorra quando os dados estiverem prontos,
+     * garantindo sincronismo entre leitura e cálculo.
+     */
 
     // Reading raw temperatures and converting to Celsius when ready
-    static volatile bool raw_temps_ready;
-    static void update_raw_temperatures();
+     /*#################################### TCC LUCAS ####################################*/
+    static volatile bool raw_temps_ready;   
+    static void update_raw_temperatures();    
     static void updateTemperaturesFromRawValues();
     static bool updateTemperaturesIfReady() {
       if (!raw_temps_ready) return false;
@@ -1092,7 +1201,7 @@ class Temperature {
     #if HAS_HOTEND
       static float get_pid_output_hotend(const uint8_t e);
     #endif
-    #if ENABLED(PIDTEMPBED)
+    #if ENABLED(PIDTEMPBED) // DISABLED FOR MULTI-BEDS
       static float get_pid_output_bed();
     #endif
     #if ENABLED(PIDTEMPCHAMBER)
@@ -1125,7 +1234,7 @@ class Temperature {
       static RunawayIndex runaway_index_for_id(const int8_t heater_id) {
         TERN_(THERMAL_PROTECTION_CHAMBER, if (heater_id == H_CHAMBER) return RUNAWAY_IND_CHAMBER);
         TERN_(THERMAL_PROTECTION_COOLER,  if (heater_id == H_COOLER)  return RUNAWAY_IND_COOLER);
-        TERN_(THERMAL_PROTECTION_BED,     if (heater_id == H_BED)     return RUNAWAY_IND_BED);
+        TERN_(THERMAL_PROTECTION_BED,     if (heater_id == H_BED0)     return RUNAWAY_IND_BED);
         return (RunawayIndex)_MAX(heater_id, 0);
       }
 

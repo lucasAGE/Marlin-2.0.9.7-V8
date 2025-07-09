@@ -2214,7 +2214,7 @@ void SetPID(celsius_t t, heater_id_t h) {
   void HotendPID() { SetPID(HMI_data.HotendPidT, H_E0); }
 #endif
 #if HAS_HEATED_BED
-  void BedPID() { SetPID(HMI_data.BedPidT, H_BED); }
+  void BedPID() { SetPID(HMI_data.BedPidT, H_BED0); }
 #endif
 
 #if ENABLED(POWER_LOSS_RECOVERY)

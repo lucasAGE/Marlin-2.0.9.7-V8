@@ -188,7 +188,7 @@ void menu_backlash();
     int16_t tune_temp;
     switch (hid) {
       #if ENABLED(PIDTEMPBED)
-        case H_BED: tune_temp = autotune_temp_bed; break;
+        case H_BED0: tune_temp = autotune_temp_bed; break;
       #endif
       #if ENABLED(PIDTEMPCHAMBER)
         case H_CHAMBER: tune_temp = autotune_temp_chamber; break;
@@ -216,7 +216,7 @@ void menu_backlash();
   void copy_and_scalePID_i(const int8_t e) {
     switch (e) {
       #if ENABLED(PIDTEMPBED)
-        case H_BED: thermalManager.temp_bed.pid.Ki = scalePID_i(raw_Ki); break;
+        case H_BED0: thermalManager.temp_bed.pid.Ki = scalePID_i(raw_Ki); break;
       #endif
       #if ENABLED(PIDTEMPCHAMBER)
         case H_CHAMBER: thermalManager.temp_chamber.pid.Ki = scalePID_i(raw_Ki); break;
@@ -232,7 +232,7 @@ void menu_backlash();
   void copy_and_scalePID_d(const int8_t e) {
     switch (e) {
       #if ENABLED(PIDTEMPBED)
-        case H_BED: thermalManager.temp_bed.pid.Kd = scalePID_d(raw_Kd); break;
+        case H_BED0: thermalManager.temp_bed.pid.Kd = scalePID_d(raw_Kd); break;
       #endif
       #if ENABLED(PIDTEMPCHAMBER)
         case H_CHAMBER: thermalManager.temp_chamber.pid.Kd = scalePID_d(raw_Kd); break;
@@ -385,10 +385,10 @@ void menu_backlash();
 
     #if ENABLED(PIDTEMPBED)
       #if ENABLED(PID_EDIT_MENU)
-        _PID_EDIT_ITEMS_TMPL(H_BED, thermalManager.temp_bed);
+        _PID_EDIT_ITEMS_TMPL(H_BED0, thermalManager.temp_bed);
       #endif
       #if ENABLED(PID_AUTOTUNE_MENU)
-        EDIT_ITEM_FAST_N(int3, H_BED, MSG_PID_AUTOTUNE_E, &autotune_temp_bed, PREHEAT_1_TEMP_BED, BED_MAX_TARGET, []{ _lcd_autotune(H_BED); });
+        EDIT_ITEM_FAST_N(int3, H_BED0, MSG_PID_AUTOTUNE_E, &autotune_temp_bed, PREHEAT_1_TEMP_BED, BED_MAX_TARGET, []{ _lcd_autotune(H_BED0); });
       #endif
     #endif
 

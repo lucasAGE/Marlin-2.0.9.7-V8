@@ -467,7 +467,7 @@ FORCE_INLINE void _draw_axis_value(const AxisEnum axis, const char *value, const
         lcd_moveto(6, 7);
       }
     #else
-      if (heater_id > H_BED) {
+      if (heater_id > H_BED0) {
         lcd_moveto(heater_id * 4, 5); lcd.print(prefix); // HE1 or HE2 or HE3
         lcd_moveto(heater_id * 4, 6); lcd.print(i16tostr3rj(t1));
         lcd_moveto(heater_id * 4, 7);
@@ -492,7 +492,7 @@ FORCE_INLINE void _draw_axis_value(const AxisEnum axis, const char *value, const
         lcd.print(i16tostr3rj(t2));
 
     switch (heater_id) {
-      case H_BED: pic_hot_bits = ICON_BED;   break;
+      case H_BED0: pic_hot_bits = ICON_BED;   break;
       case H_E0:  pic_hot_bits = ICON_TEMP1; break;
       case H_E1:  pic_hot_bits = ICON_TEMP2; break;
       case H_E2:  pic_hot_bits = ICON_TEMP3;
@@ -878,9 +878,9 @@ void MarlinUI::draw_status_screen() {
 
     #if HAS_HEATED_BED
       #if HAS_LEVELING
-        _draw_heater_status(H_BED, (planner.leveling_active && blink ? "___" : "BED"), blink);
+        _draw_heater_status(H_BED0, (planner.leveling_active && blink ? "___" : "BED"), blink);
       #else
-        _draw_heater_status(H_BED, "BED", blink);
+        _draw_heater_status(H_BED0, "BED", blink);
       #endif
     #endif
 
