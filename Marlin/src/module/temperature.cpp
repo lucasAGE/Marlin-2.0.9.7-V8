@@ -213,7 +213,23 @@
       Wire.begin(); 
     }
   #endif
+  /*
+  #define RATE_ADS1115_8SPS (0x0000)   ///< 8 samples per second
+  #define RATE_ADS1115_16SPS (0x0020)  ///< 16 samples per second
+  #define RATE_ADS1115_32SPS (0x0040)  ///< 32 samples per second
+  #define RATE_ADS1115_64SPS (0x0060)  ///< 64 samples per second
+  #define RATE_ADS1115_128SPS (0x0080) ///< 128 samples per second (default)
+  #define RATE_ADS1115_250SPS (0x00A0) ///< 250 samples per second
+  #define RATE_ADS1115_475SPS (0x00C0) ///< 475 samples per second
+  #define RATE_ADS1115_860SPS (0x00E0) ///< 860 samples per second
 
+  GAIN_TWOTHIRDS   6.144  
+  GAIN_ONE         4.096
+  GAIN_TWO         2.048
+  GAIN_FOUR        1.024
+  GAIN_EIGHT       0.512
+  GAIN_SIXTEEN     0.256
+    */
   #if ADS1115_BED_READING
     void Temperature::initADS1115() {
       if (!bedADS.begin(ADS1115_ADDRESS, &Wire)) {
@@ -225,22 +241,44 @@
     } 
 
     void Temperature::read_bed_temperatures_ADS1115() {
-      int16_t raw16;
+      int16_t raw16_ADS1115;
+
+      //Como tensão máxima ≃ 3.3 V/4.096V(GAIN ONE) * ≃ 26430 
+
+      constexpr uint16_t ADS_MAX_RANGE_3V3 = 26430; //≃ 26430 
+
       for (uint8_t i = 0; i < BED_COUNT; ++i) {
-        raw16 = bedADS.readADC_SingleEnded(i);
+        raw16_ADS1115 = bedADS.readADC_SingleEnded(i);
+
+        //Tornando entrada 16bits em 32bits para calculos intermediarios(evitar overflow)
+        uint32_t raw32_ADS1115 = uint32_t(raw16_ADS1115);
         // Garante valor positivo
-        if (raw16 < 0) raw16 = -raw16;
+        if (raw16_ADS1115 < 0) raw16_ADS1115 = 0;
 
-        // 16 → 10 bits
-        uint16_t raw10 = uint16_t(raw16) >> 6;
+        /*16 → 10 bits
+        uint16_t raw10_ADS1115 = uint16_t(raw16_ADS1115) >> 5;
+        temp_bed[i].setraw(raw10_ADS1115);   
 
-        // Armazena para a conversão posterior
-        temp_bed[i].setraw(raw10);
+         1) Normalize 16-bit (0…32767) → 10-bit        
+        */
+        uint16_t raw10_ADS1115 = raw32_ADS1115 * 1023 / ADS_MAX_RANGE_3V3;
 
+        // 2) Apply oversampling factor 16 → faixa 0…1023·16 (0…16368)
+        uint16_t scaled = raw10_ADS1115 * OVERSAMPLENR;
+
+        // 3) Seta na estrutura das camas aquecidas o valor bruto de 10 bits lido pelo
+        // ADS1115 ou o valor escalado com OVERSAMPLENR(16);
+
+        //temp_bed[i].setraw(raw10_ADS1115);            
+        temp_bed[i].setraw(scaled);
+ 
         // Opcional: debug, só se quiser
         #if SERIAL_MULTI_BEDS
-          SERIAL_ECHOPGM("Cama "); SERIAL_ECHO(i);
-          SERIAL_ECHOPGM(" Raw10: "); SERIAL_ECHOLN(raw10);          
+          SERIAL_ECHOPGM("ADS Cama "); SERIAL_ECHO(i);              
+          SERIAL_ECHOPGM("Sinal 10bits: "); SERIAL_ECHOLN(raw10_ADS1115);   
+          SERIAL_ECHOPGM("Sinal 16bits:"); SERIAL_ECHOLN(raw16_ADS1115);
+          SERIAL_ECHOPGM("Sinal 32bits:"); SERIAL_ECHOLN(raw32_ADS1115);           
+          SERIAL_ECHOPGM("Sinal escalado:"); SERIAL_ECHOLN(scaled);           
         #endif
       }
     } 
@@ -267,9 +305,9 @@
 
       #if SERIAL_MULTI_BEDS
         // Exibe cada bit das camas 0..3
-        SERIAL_ECHOPGM("Beds: [");
+        SERIAL_ECHOPGM("PCF Beds: [");
         for (uint8_t b = 0; b < 4; ++b) {
-          SERIAL_ECHO(((state >> b) & 1) ? '1' : '0');
+          SERIAL_ECHO((state >> b) & 1);
           if (b < 3) SERIAL_ECHOPGM(",");
         }
         SERIAL_ECHOLNPGM("] ");           
@@ -1709,15 +1747,7 @@ void Temperature::min_temp_error(const heater_id_t heater_id) {
 
     void Temperature::manage_all_heated_beds(const millis_t &ms) {
       for (uint8_t b = 0; b < BED_COUNT; ++b){
-        manage_heated_bed(b, ms);
-
-        #if SERIAL_MULTI_BEDS
-          SERIAL_ECHOPGM("Bed ");
-          SERIAL_ECHO(b);         
-          SERIAL_ECHOPGM(" | PWM: ");
-          SERIAL_ECHO(temp_bed[b].soft_pwm_amount);
-          SERIAL_ECHOLN(" ");  // pula linha
-        #endif
+        manage_heated_bed(b, ms);      
 
       }           
     }
@@ -2000,11 +2030,7 @@ void Temperature::min_temp_error(const heater_id_t heater_id) {
  *  - Apply filament width to the extrusion rate (may move)
  *  - Update the heated bed PID output value
  */
-void Temperature::task() {
-
-  #if SERIAL_MULTI_BEDS
-  SERIAL_ECHOLNPGM("temperature task iniciado.");
-  #endif
+void Temperature::task() { 
   
   if (marlin_state == MF_INITIALIZING) return hal.watchdog_refresh(); // If Marlin isn't started, at least reset the watchdog!
 
@@ -2360,7 +2386,7 @@ void Temperature::task() {
 
 #if HAS_HEATED_BED
   // For bed temperature measurement.
-  celsius_float_t Temperature::analog_to_celsius_bed(const raw_adc_t raw) {
+  celsius_float_t Temperature::analog_to_celsius_bed(const raw_adc_t raw) {    
     #if TEMP_SENSOR_BED_IS_CUSTOM
       return user_thermistor_to_deg_c(CTI_BED, raw);
     #elif TEMP_SENSOR_BED_IS_THERMISTOR
@@ -2373,6 +2399,11 @@ void Temperature::task() {
       UNUSED(raw);
       return 0;
     #endif
+
+    #if SERIAL_MULTI_BEDS      
+      SERIAL_ECHOPGM("atcb raw10_ADS1115: "); SERIAL_ECHOLN(raw);           
+    #endif
+
   }
 #endif // HAS_HEATED_BED
 
@@ -2495,29 +2526,35 @@ void Temperature::updateTemperaturesFromRawValues() {
   #endif
 
   /*#################################### TCC LUCAS ####################################*/
-  #if HAS_MULTI_BEDS
-
-    #if SERIAL_MULTI_BEDS
-      // Cabeçalho de depuração
-      SERIAL_ECHOPGM("Beds °C: [");
-    #endif
+  #if HAS_MULTI_BEDS    
 
     // Para cada cama, converte o raw de 10 bits em °C
     for (uint8_t b = 0; b < BED_COUNT; ++b) {
       temp_bed[b].celsius = analog_to_celsius_bed(temp_bed[b].getraw());
-      float c = temp_bed[b].celsius;
+      float c = temp_bed[b].celsius;        
 
       #if SERIAL_MULTI_BEDS        
         SERIAL_ECHO(c);
-        if (b < BED_COUNT - 1) SERIAL_ECHOPGM(", ");
-      #endif
-      }
-
-      #if SERIAL_MULTI_BEDS
-      SERIAL_ECHOLNPGM("]");      
-      #endif
+        SERIAL_ECHOPGM(", ");               
+      #endif          
+    }   
+   
+    #if SERIAL_MULTI_BEDS
+    //float l = analog_to_celsius_bed(999999);
+    //float m = analog_to_celsius_bed(500000);
+   // float n = analog_to_celsius_bed(100000);
+    //float o = analog_to_celsius_bed(31000);
+   // SERIAL_ECHO(l);
+   // SERIAL_ECHOPGM(", "); 
+   // SERIAL_ECHO(m);
+  //  SERIAL_ECHOPGM(", "); 
+   // SERIAL_ECHO(n);
+   // SERIAL_ECHOPGM(", "); 
+   // SERIAL_ECHO(o);      
+    SERIAL_ECHOLN(" ");        
+    #endif
       
-    #elif HAS_HEATED_BED
+  #elif HAS_HEATED_BED
       // Single-bed
       temp_bed.celsius = analog_to_celsius_bed(temp_bed.getraw());
   #endif
@@ -2620,6 +2657,18 @@ void Temperature::init() {
 
   #if BOTH(PIDTEMP, PID_EXTRUSION_SCALING)
     pes_e_position = 0;
+  #endif
+
+  #if ADS1115_BED_READING || PCF8574_BED_CONTROL
+    initWireI2C();
+  #endif
+
+  #if ADS1115_BED_READING
+    initADS1115();
+  #endif
+
+  #if PCF8574_BED_CONTROL
+    initPCF8574();
   #endif
 
   // Init (and disable) SPI thermocouples
@@ -2954,17 +3003,7 @@ void Temperature::init() {
 
   /*#################################### TCC LUCAS ####################################*/
 
-  #if ADS1115_BED_READING || PCF8574_BED_CONTROL
-    initWireI2C();
-  #endif
-
-  #if ADS1115_BED_READING
-    initADS1115();
-  #endif
-
-  #if PCF8574_BED_CONTROL
-    initPCF8574();
-  #endif
+  
 } //void Temperature::init()
 
 #if HAS_THERMAL_PROTECTION
@@ -3476,14 +3515,15 @@ void Temperature::readings_ready() {
 
   /*#################################### TCC LUCAS ####################################*/
   #if HAS_HEATED_BED
-    #if HAS_MULTI_BEDS
-      // Reset em todas as camas antes de começar a amostragem
-      for (uint8_t b = 0; b < BED_COUNT; ++b) 
-        temp_bed[b].reset();
-    #else// Single-bed Fallback      
-      temp_bed.reset();
+    #if !ADS1115_BED_READING   // só reseta o acc se NÃO for ADS1115
+      #if HAS_MULTI_BEDS
+        for (uint8_t b = 0; b < BED_COUNT; ++b)
+          temp_bed[b].reset();
+      #else
+        temp_bed.reset();
+      #endif
     #endif
-  #endif 
+  #endif
 
   TERN_(HAS_TEMP_CHAMBER,   temp_chamber.reset());
   TERN_(HAS_TEMP_PROBE,     temp_probe.reset());
