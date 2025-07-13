@@ -61,14 +61,16 @@
 #define HOTEND_INDEX TERN(HAS_MULTI_HOTEND, e, 0)
 #define E_NAME TERN_(HAS_MULTI_HOTEND, e)
 
-// Element identifiers. Positive values are hotends. Negative values are other heaters or coolers.
+// Identificadores dos elementos de aquecimento e resfriamento.
+// Valores positivos representam hotends (extrusoras).
+// Valores negativos representam outros elementos, como cama, câmara, placa e cooler.
 typedef enum : int8_t {
-  H_REDUNDANT = HID_REDUNDANT,
-  H_COOLER = HID_COOLER,
-  H_PROBE = HID_PROBE,
-  H_BOARD = HID_BOARD,
-  H_CHAMBER = HID_CHAMBER,
-  H_BED0 = HID_BED0,  //-1
+  H_REDUNDANT = HID_REDUNDANT,  // Sensor redundante de segurança (não controla aquecimento)
+  H_COOLER    = HID_COOLER,     // Sistema de resfriamento (cooler ativo)
+  H_PROBE     = HID_PROBE,      // Sensor de sonda térmica (ex: BLTouch com aquecimento ativo)
+  H_BOARD     = HID_BOARD,      // Temperatura da placa eletrônica
+  H_CHAMBER   = HID_CHAMBER,    // Câmara aquecida
+  H_BED0      = HID_BED0,       // Cama aquecida 0 (identificada com valor negativo: -1)
 
   #if ENABLED(HAS_MULTI_BEDS)
     H_BED1 = HID_BED1,  // -2
@@ -128,16 +130,21 @@ hotend_pid_t;
 #endif
 
 /**
- * States for ADC reading in the ISR
+ * Estados usados na leitura ADC dentro da ISR (Interrupt Service Routine)
+ * Essa enumeração controla a sequência de leitura dos sensores analógicos (como termistores)
+ * dentro da rotina de interrupção do Marlin.
  */
 enum ADCSensorState : char {
-  StartSampling,
+  StartSampling,  // Início da amostragem dos sensores
+
   #if HAS_TEMP_ADC_0
-    PrepareTemp_0, MeasureTemp_0,
+    PrepareTemp_0,   // Prepara a leitura da temperatura do hotend 0
+    MeasureTemp_0,   // Realiza a leitura da temperatura do hotend 0
   #endif
   #if HAS_TEMP_ADC_BED
     #if DISABLED(HAS_MULTI_BEDS)
-    PrepareTemp_BED, MeasureTemp_BED,
+      PrepareTemp_BED,   // Prepara a leitura da temperatura da cama (modo tradicional)
+      MeasureTemp_BED,   // Realiza a leitura da temperatura da cama (modo tradicional)
     #endif
   #endif
   #if HAS_TEMP_ADC_CHAMBER
@@ -203,10 +210,11 @@ enum ADCSensorState : char {
   StartupDelay  // Startup, delay initial temp reading a tiny bit so the hardware can settle
 };
 
-// Minimum number of Temperature::ISR loops between sensor readings.
-// Multiplied by 16 (OVERSAMPLENR) to obtain the total time to
-// get all oversampled sensor readings
-#define MIN_ADC_ISR_LOOPS 10
+// Número mínimo de loops da função Temperature::ISR entre cada leitura de sensor.
+// Esse valor é multiplicado por 16 (valor de OVERSAMPLENR) para obter o tempo total
+// necessário para completar todas as leituras com superamostragem (oversampling).
+#define MIN_ADC_ISR_LOOPS 10  // Define a frequência mínima de leitura dos sensores analógicos na interrupção
+
 
 #define ACTUAL_ADC_SAMPLES _MAX(int(MIN_ADC_ISR_LOOPS), int(SensorsReady))
 
@@ -229,7 +237,7 @@ enum ADCSensorState : char {
   #define G26_CLICK_CAN_CANCEL 1
 #endif
 
-// A temperature sensor
+// um sensor de temperatura
 typedef struct TempInfo {
 private:
   raw_adc_t acc;
@@ -250,7 +258,7 @@ public:
   } redundant_info_t;
 #endif
 
-// A PWM heater with temperature sensor
+// Um aquecedor PWM com sensor de temperatura
 typedef struct HeaterInfo : public TempInfo {
   celsius_t target;
   uint8_t soft_pwm_amount;
@@ -1050,12 +1058,12 @@ class Temperature {
     #endif
 
     /**
-     * The software PWM power for a heater
+     * O PWM de software para um aquecedor
      */
     static int16_t getHeaterPower(const heater_id_t heater_id);
 
     /**
-     * Switch off all heaters, set all target temperatures to 0
+     * Desliga todos os aquecedores, definido temperatura alvo para zero
      */
     static void disable_all_heaters();
 
@@ -1168,7 +1176,7 @@ class Temperature {
      * garantindo sincronismo entre leitura e cálculo.
      */
 
-    // Reading raw temperatures and converting to Celsius when ready
+    // Lendo valores brutos dos sensores e convertendo em celsius quando pronto
      /*#################################### TCC LUCAS ####################################*/
     static volatile bool raw_temps_ready;   
     static void update_raw_temperatures();    

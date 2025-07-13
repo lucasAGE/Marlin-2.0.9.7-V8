@@ -751,37 +751,38 @@ inline void manage_inactivity(const bool no_stepper_sleep=false) {
 }
 
 /**
- * Standard idle routine keeps the machine alive:
- *  - Core Marlin activities
- *  - Manage heaters (and Watchdog)
- *  - Max7219 heartbeat, animation, etc.
+ * Rotina padrão de ociosidade que mantém a impressora "viva":
+ *  - Executa as atividades principais do Marlin
+ *  - Gerencia os aquecedores (inclui reinício do watchdog)
+ *  - Controla o display Max7219 (batimento, animações, etc.)
  *
- *  Only after setup() is complete:
- *  - Handle filament runout sensors
- *  - Run HAL idle tasks
- *  - Handle Power-Loss Recovery
- *  - Run StallGuard endstop checks
- *  - Handle SD Card insert / remove
- *  - Handle USB Flash Drive insert / remove
- *  - Announce Host Keepalive state (if any)
- *  - Update the Print Job Timer state
- *  - Update the Beeper queue
- *  - Read Buttons and Update the LCD
- *  - Run i2c Position Encoders
- *  - Auto-report Temperatures / SD Status
- *  - Update the Průša MMU2
- *  - Handle Joystick jogging
+ *  Após a conclusão do setup():
+ *  - Verifica sensores de fim de filamento
+ *  - Executa tarefas de fundo da camada HAL
+ *  - Trata recuperação de perda de energia
+ *  - Executa verificações de fim de curso com StallGuard
+ *  - Detecta inserção/remoção de cartão SD
+ *  - Detecta inserção/remoção de pen drive USB
+ *  - Comunica o estado de "Keepalive" com o host
+ *  - Atualiza o estado do temporizador da impressão
+ *  - Atualiza a fila do Beeper (bipes do sistema)
+ *  - Lê botões e atualiza a interface do LCD
+ *  - Lê encoders de posição via I2C
+ *  - Atualiza temperatura e status do SD automaticamente
+ *  - Controla unidade MMU2 da Průša
+ *  - Executa controle manual por joystick
  */
 void idle(bool no_stepper_sleep/*=false*/) {
   #if ENABLED(MARLIN_DEV_MODE)
     static uint16_t idle_depth = 0;
+    // Em modo de desenvolvimento, informa se a função está sendo chamada recursivamente
     if (++idle_depth > 5) SERIAL_ECHOLNPGM("idle() call depth: ", idle_depth);
   #endif
 
-  // Core Marlin activities
+  // Atividades principais do Marlin (como desligar motores após inatividade)
   manage_inactivity(no_stepper_sleep);
 
-  // Manage Heaters (and Watchdog)
+  // Gerencia os aquecedores (inclui o temporizador watchdog)
   thermalManager.task();
 
   // Max7219 heartbeat, animation, etc
@@ -1030,92 +1031,92 @@ inline void tmc_standby_setup() {
 }
 
 /**
- * Marlin Firmware entry-point. Abandon Hope All Ye Who Enter Here.
- * Setup before the program loop:
+ * Ponto de entrada do Firmware Marlin. Abandone toda esperança, vós que entrais aqui.
+ * Etapas de inicialização antes do loop principal:
  *
- *  - Call any special pre-init set for the board
- *  - Put TMC drivers into Low Power Standby mode
- *  - Init the serial ports (so setup can be debugged)
- *  - Set up the kill and suicide pins
- *  - Prepare (disable) board JTAG and Debug ports
- *  - Init serial for a connected MKS TFT with WiFi
- *  - Install Marlin custom Exception Handlers, if set.
- *  - Init Marlin's HAL interfaces (for SPI, i2c, etc.)
- *  - Init some optional hardware and features:
- *    • MAX Thermocouple pins
+ *  - Chama qualquer função especial de pré-inicialização da placa
+ *  - Coloca os drivers TMC em modo de espera de baixo consumo
+ *  - Inicializa as portas seriais (útil para debugar a configuração)
+ *  - Configura os pinos de emergência (kill) e suicídio
+ *  - Prepara (desabilita) JTAG e portas de debug da placa
+ *  - Inicializa a serial para telas MKS TFT com Wi-Fi
+ *  - Instala os tratadores de exceção personalizados do Marlin (se ativado)
+ *  - Inicializa interfaces HAL do Marlin (SPI, I2C, etc.)
+ *  - Inicializa alguns recursos e hardwares opcionais:
+ *    • Pinos de termopar MAX
  *    • Duet Smart Effector
- *    • Filament Runout Sensor
- *    • TMC220x Stepper Drivers (Serial)
- *    • PSU control
- *    • Power-loss Recovery
- *    • L64XX Stepper Drivers (SPI)
- *    • Stepper Driver Reset: DISABLE
- *    • TMC Stepper Drivers (SPI)
- *    • Run hal.init_board() for additional pins setup
- *    • ESP WiFi
- *  - Get the Reset Reason and report it
- *  - Print startup messages and diagnostics
- *  - Calibrate the HAL DELAY for precise timing
- *  - Init the buzzer, possibly a custom timer
- *  - Init more optional hardware:
- *    • Color LED illumination
- *    • Neopixel illumination
- *    • Controller Fan
- *    • Creality DWIN LCD (show boot image)
- *    • Tare the Probe if possible
- *  - Mount the (most likely external) SD Card
- *  - Load settings from EEPROM (or use defaults)
- *  - Init the Ethernet Port
- *  - Init Touch Buttons (for emulated DOGLCD)
- *  - Adjust the (certainly wrong) current position by the home offset
- *  - Init the Planner::position (steps) based on current (native) position
- *  - Initialize more managers and peripherals:
- *    • Temperatures
- *    • Print Job Timer
- *    • Endstops and Endstop Interrupts
- *    • Stepper ISR - Kind of Important!
+ *    • Sensor de fim de filamento
+ *    • Drivers TMC220x (via Serial)
+ *    • Controle de fonte de alimentação (PSU)
+ *    • Recuperação de perda de energia
+ *    • Drivers L64XX (via SPI)
+ *    • Reset de drivers de passo: DESABILITADO
+ *    • Drivers TMC (via SPI)
+ *    • Executa hal.init_board() para configurar pinos adicionais
+ *    • Wi-Fi via ESP
+ *  - Obtém o motivo do último reset da placa e imprime
+ *  - Exibe mensagens de inicialização e diagnósticos
+ *  - Calibra o HAL DELAY para garantir temporização precisa
+ *  - Inicializa o buzzer, possivelmente com um timer personalizado
+ *  - Inicializa mais hardwares opcionais:
+ *    • Iluminação por LED RGB
+ *    • Iluminação por Neopixel
+ *    • Ventoinha de controle
+ *    • LCD DWIN da Creality (exibe imagem de boot)
+ *    • Zera o sensor de toque (se possível)
+ *  - Monta o cartão SD (geralmente externo)
+ *  - Carrega configurações da EEPROM (ou usa valores padrão)
+ *  - Inicializa a porta Ethernet
+ *  - Inicializa botões de toque (emulados em DOGLCD)
+ *  - Ajusta a posição atual com base no offset de home
+ *  - Inicializa a posição do Planner com base na posição real
+ *  - Inicializa mais periféricos e gerenciadores:
+ *    • Temperatura
+ *    • Temporizador da tarefa de impressão
+ *    • Fim de curso e interrupções de fim de curso
+ *    • Interrupção dos motores de passo (Stepper ISR)
  *    • Servos
- *    • Servo-based Probe
- *    • Photograph Pin
- *    • Laser/Spindle tool Power / PWM
- *    • Coolant Control
- *    • Bed Probe
- *    • Stepper Driver Reset: ENABLE
- *    • Digipot I2C - Stepper driver current control
- *    • Stepper DAC - Stepper driver current control
- *    • Solenoid (probe, or for other use)
- *    • Home Pin
- *    • Custom User Buttons
- *    • Red/Blue Status LEDs
- *    • Case Light
- *    • Prusa MMU filament changer
- *    • Fan Multiplexer
- *    • Mixing Extruder
- *    • BLTouch Probe
- *    • I2C Position Encoders
- *    • Custom I2C Bus handlers
- *    • Enhanced tools or extruders:
- *      • Switching Extruder
- *      • Switching Nozzle
- *      • Parking Extruder
- *      • Magnetic Parking Extruder
- *      • Switching Toolhead
- *      • Electromagnetic Switching Toolhead
- *    • Watchdog Timer - Also Kind of Important!
- *    • Closed Loop Controller
- *  - Run Startup Commands, if defined
- *  - Tell host to close Host Prompts
- *  - Test Trinamic driver connections
- *  - Init Prusa MMU2 filament changer
- *  - Init and test BL24Cxx EEPROM
- *  - Init Creality DWIN encoder, show faux progress bar
- *  - Reset Status Message / Show Service Messages
- *  - Init MAX7219 LED Matrix
- *  - Init Direct Stepping (Klipper-style motion control)
- *  - Init TFT LVGL UI (with 3D Graphics)
- *  - Apply Password Lock - Hold for Authentication
- *  - Open Touch Screen Calibration screen, if not calibrated
- *  - Set Marlin to RUNNING State
+ *    • Probes baseados em servo
+ *    • Pino de fotografia
+ *    • Controle de potência/frequência do laser ou spindle
+ *    • Controle de fluido refrigerante
+ *    • Probe da mesa
+ *    • Reset de driver de passo: ATIVADO
+ *    • Digipot via I2C (controle de corrente dos drivers)
+ *    • DAC para drivers (controle de corrente)
+ *    • Solenoide (para probe ou outros usos)
+ *    • Pino de homing
+ *    • Botões personalizados do usuário
+ *    • LEDs de status vermelho/azul
+ *    • Luz de gabinete (case light)
+ *    • Troca de filamento tipo Prusa MMU
+ *    • Multiplexador de ventoinha
+ *    • Extrusora de mistura (Mixing Extruder)
+ *    • Probe BLTouch
+ *    • Encoders de posição via I2C
+ *    • Manipuladores personalizados para I2C
+ *    • Ferramentas/extrusoras avançadas:
+ *      • Extrusora comutável
+ *      • Bico comutável
+ *      • Extrusora com estacionamento
+ *      • Extrusora magnética com estacionamento
+ *      • Cabeçote de ferramentas comutável
+ *      • Cabeçote com comutação eletromagnética
+ *    • Temporizador Watchdog (muito importante!)
+ *    • Controle em malha fechada (closed-loop)
+ *  - Executa comandos de inicialização, se definidos
+ *  - Informa ao host para fechar prompts abertos
+ *  - Testa conexões dos drivers Trinamic
+ *  - Inicializa troca de filamento tipo Prusa MMU2
+ *  - Inicializa e testa EEPROM BL24Cxx
+ *  - Inicializa encoder do DWIN e mostra barra de carregamento
+ *  - Reseta mensagens de status / exibe mensagens de serviço
+ *  - Inicializa a matriz de LED MAX7219
+ *  - Inicializa movimento estilo Klipper (stepping direto)
+ *  - Inicializa interface gráfica TFT com LVGL (3D UI)
+ *  - Aplica travamento por senha (aguarda autenticação)
+ *  - Abre tela de calibração touch se não estiver calibrado
+ *  - Define o estado do Marlin como "EM EXECUÇÃO"
  */
 void setup() {
   #ifdef FASTIO_INIT
@@ -1343,7 +1344,7 @@ void setup() {
 
   /*#################################### TCC LUCAS ####################################*/
 
-  SETUP_RUN(thermalManager.init());   // Initialize temperature loop
+  SETUP_RUN(thermalManager.init());   // Inicializa o gerenciador de temperatura (loop de controle de temperatura)
 
   SETUP_RUN(print_job_timer.init());  // Initial setup of print job timer
 
@@ -1635,36 +1636,37 @@ void setup() {
 }
 
 /**
- * The main Marlin program loop
+ * Loop principal do Marlin
  *
- *  - Call idle() to handle all tasks between G-code commands
- *      Note that no G-codes from the queue can be executed during idle()
- *      but many G-codes can be called directly anytime like macros.
- *  - Check whether SD card auto-start is needed now.
- *  - Check whether SD print finishing is needed now.
- *  - Run one G-code command from the immediate or main command queue
- *    and open up one space. Commands in the main queue may come from sd
- *    card, host, or by direct injection. The queue will continue to fill
- *    as long as idle() or manage_inactivity() are being called.
+ *  - Chama idle() para lidar com todas as tarefas entre comandos G-code
+ *      Observação: nenhum G-code da fila principal será executado durante idle(),
+ *      mas muitos comandos G-code podem ser chamados diretamente a qualquer momento, como macros.
+ *  - Verifica se é necessário executar o auto-start do cartão SD.
+ *  - Verifica se a finalização da impressão via SD precisa ser processada.
+ *  - Executa um comando G-code da fila imediata ou principal,
+ *    liberando espaço para novos comandos. Comandos da fila principal podem vir do cartão SD,
+ *    do host (ex: OctoPrint) ou serem injetados diretamente. A fila continuará sendo preenchida
+ *    enquanto idle() ou manage_inactivity() forem chamados.
  */
 void loop() {
   do {
-    idle();    
+    idle();  // Executa tarefas de manutenção enquanto não há comandos G-code para processar
 
     #if ENABLED(SDSUPPORT)
-      if (card.flag.abort_sd_printing) abortSDPrinting();
-      if (marlin_state == MF_SD_COMPLETE) finishSDPrinting();
+      if (card.flag.abort_sd_printing) abortSDPrinting();         // Aborta a impressão via SD se for sinalizado
+      if (marlin_state == MF_SD_COMPLETE) finishSDPrinting();     // Finaliza a impressão via SD se tiver terminado
     #endif
 
-    queue.advance();
+    queue.advance();  // Avança a fila de comandos G-code, processando o próximo comando disponível
 
     #if EITHER(POWER_OFF_TIMER, POWER_OFF_WAIT_FOR_COOLDOWN)
-      powerManager.checkAutoPowerOff();
+      powerManager.checkAutoPowerOff();  // Verifica se é possível desligar automaticamente a impressora
     #endif
 
-    endstops.event_handler();
+    endstops.event_handler();  // Trata eventos dos sensores de fim de curso (endstops)
 
-    TERN_(HAS_TFT_LVGL_UI, printer_state_polling());
+    TERN_(HAS_TFT_LVGL_UI, printer_state_polling());  // Atualiza estado da impressora para interface gráfica, se estiver usando display LVGL
 
-  } while (ENABLED(__AVR__)); // Loop forever on slower (AVR) boards
+  } while (ENABLED(__AVR__)); // Em placas AVR, entra em loop infinito aqui (loop principal contínuo)
 }
+

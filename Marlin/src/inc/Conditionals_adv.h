@@ -23,8 +23,10 @@
 
 /**
  * Conditionals_adv.h
- * Conditionals set before pins.h and which depend on Configuration_adv.h.
+ * Arquivo com definições condicionais que são configuradas antes do pins.h
+ * e que dependem das opções definidas em Configuration_adv.h.
  */
+
 
 #ifndef AXIS_RELATIVE_MODES
   #define AXIS_RELATIVE_MODES {}
@@ -111,12 +113,14 @@
   #undef MANUAL_E_MOVES_RELATIVE
   #undef STEALTHCHOP_E
 #endif
+/*#################################### TCC LUCAS ####################################*/
 
 /**
- * Temperature Sensors; define what sensor(s) we have.
+ * Sensores de Temperatura; define quais sensores estão conectados.
  */
 
-// Temperature sensor IDs
+// Identificadores dos sensores de temperatura
+
 #define HID_REDUNDANT -9
 #define HID_BOARD     -8
 #define HID_COOLER    -7

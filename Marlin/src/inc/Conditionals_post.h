@@ -23,8 +23,10 @@
 
 /**
  * Conditionals_post.h
- * Internal defines that depend on Configurations and Pins but are not user-editable.
+ * Definições internas que dependem das configurações (Configuration.h/adv.h) e dos pinos (pins.h),
+ * mas que **não devem ser editadas pelo usuário**.
  */
+
 
 #ifdef GITHUB_ACTIONS
   // Extras for CI testing
