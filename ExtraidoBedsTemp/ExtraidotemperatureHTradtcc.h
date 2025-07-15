@@ -1,13 +1,11 @@
 /**
  * temperature.h - Controlador de temepratura
  */
-
 ...
-
 // Se estiver ativado o uso de ADS1115 para leitura das camas ou PCF8574 para controle de aquecimento,
-// inclui a biblioteca Wire (I²C) necessária para comunicação com ambos os dispositivos.
+// inclui a biblioteca Wire (I²C) necessaria para comunicacao com ambos os dispositivos.
 #if ADS1115_BED_READING || PCF8574_BED_CONTROL
-  #include <Wire.h>  // Biblioteca I²C padrão do Arduino
+  #include <Wire.h>  // Biblioteca I²C padrao do Arduino
 #endif
 
 // Se a leitura das camas aquecidas for feita via ADS1115, inclui a biblioteca do conversor ADC da Adafruit
@@ -17,19 +15,17 @@
 
 // Se o controle de aquecimento das camas for feito via PCF8574, inclui a biblioteca do expansor de I/O
 #if PCF8574_BED_CONTROL
-  #include <PCF8574.h>  // Biblioteca para comunicação com o expansor digital I²C PCF8574
+  #include <PCF8574.h>  // Biblioteca para comunicacao com o expansor digital I²C PCF8574
 #endif
-
 ...
-
 // Identificadores dos elementos de aquecimento e resfriamento.
 // Valores positivos representam hotends (extrusoras).
 // Valores negativos representam outros elementos, como cama, câmara, placa e cooler.
 typedef enum : int8_t {
-  H_REDUNDANT = HID_REDUNDANT,  // Sensor redundante de segurança (não controla aquecimento)
+  H_REDUNDANT = HID_REDUNDANT,  // Sensor redundante de seguranca (nao controla aquecimento)
   H_COOLER    = HID_COOLER,     // Sistema de resfriamento (cooler ativo)
   H_PROBE     = HID_PROBE,      // Sensor de sonda térmica (ex: BLTouch com aquecimento ativo)
-  H_BOARD     = HID_BOARD,      // Temperatura da placa eletrônica
+  H_BOARD     = HID_BOARD,      // Temperatura da placa eletronica
   H_CHAMBER   = HID_CHAMBER,    // Câmara aquecida
   H_BED0      = HID_BED0,       // Cama aquecida 0 (identificada com valor negativo: -1)
 
@@ -42,16 +38,14 @@ typedef enum : int8_t {
   H_E0 = HID_E0, H_E1, H_E2, H_E3, H_E4, H_E5, H_E6, H_E7,
   H_NONE = -128
 } heater_id_t;
-
 ...
-
 /**
  * Estados usados na leitura ADC dentro da ISR (Interrupt Service Routine)
- * Essa enumeração controla a sequência de leitura dos sensores analógicos (como termistores)
- * dentro da rotina de interrupção do Marlin.
+ * Essa enumeracao controla a sequencia de leitura dos sensores analógicos (como termistores)
+ * dentro da rotina de interrupcao do Marlin.
  */
 enum ADCSensorState : char {
-  StartSampling,  // Início da amostragem dos sensores
+  StartSampling,  // Inicio da amostragem dos sensores
 
   #if HAS_TEMP_ADC_0
     PrepareTemp_0,   // Prepara a leitura da temperatura do hotend 0
@@ -63,16 +57,12 @@ enum ADCSensorState : char {
       MeasureTemp_BED,   // Realiza a leitura da temperatura da cama (modo tradicional)
     #endif
   #endif...}
-
   ...
-
-// Número mínimo de loops da função Temperature::ISR entre cada leitura de sensor.
+// Número minimo de loops da funcao Temperature::ISR entre cada leitura de sensor.
 // Esse valor é multiplicado por 16 (valor de OVERSAMPLENR) para obter o tempo total
-// necessário para completar todas as leituras com superamostragem (oversampling).
-#define MIN_ADC_ISR_LOOPS 10  // Define a frequência mínima de leitura dos sensores analógicos na interrupção
-
+// necessario para completar todas as leituras com superamostragem (oversampling).
+#define MIN_ADC_ISR_LOOPS 10  // Define a frequencia minima de leitura dos sensores analógicos na interrupcao
 ...
-
 // Representa um sensor de temperatura
 typedef struct TempInfo {
 private:
@@ -89,60 +79,50 @@ public:
   raw_adc_t getraw() { return raw; }           // Retorna leitura bruta
 
 } temp_info_t;
-
-
 ...
-
 // Um aquecedor com controle PWM e sensor de temperatura
 typedef struct HeaterInfo : public TempInfo {
   celsius_t target;              // Temperatura alvo
-  uint8_t soft_pwm_amount;       // Potência PWM aplicada (0–255)
+  uint8_t soft_pwm_amount;       // Potencia PWM aplicada (0–255)
   
-  // Verifica se está abaixo da temperatura alvo (com margem opcional)
+  // Verifica se esta abaixo da temperatura alvo (com margem opcional)
   bool is_below_target(const celsius_t offs=0) const { return (celsius < (target + offs)); }
 
 } heater_info_t;
-
 ...
-
 #if HAS_HEATED_BED
   #if ENABLED(PIDTEMPBED)
     // Se PID da cama estiver ativado, usa estrutura com controle PID
     typedef struct PIDHeaterInfo<PID_t> bed_info_t;
   #else
-    // Caso contrário, usa estrutura simples com PWM
+    // Caso contrario, usa estrutura simples com PWM
     typedef heater_info_t bed_info_t;
   #endif
 #endif
-
 ...
-
 class Temperature {
   public:
     ...
 
     #if HAS_TEMP_BED
-        // Vetor com as informações das camas aquecidas (uma por módulo)
+        // Vetor com as informacões das camas aquecidas (uma por módulo)
         static bed_info_t temp_bed[BED_COUNT];
     #endif
-
     ...
-
     #if HAS_HEATED_BED
         #if ENABLED(WATCH_BED)
-            // Monitoramento de segurança: verifica se a cama aquece corretamente dentro do tempo esperado
+            // Monitoramento de seguranca: verifica se a cama aquece corretamente dentro do tempo esperado
             static bed_watch_t watch_bed[BED_COUNT];
         #endif
         #if DISABLED(PIDTEMPBED)
-            // Tempo para a próxima verificação de temperatura da cama (usado em modo bang-bang)
+            // Tempo para a próxima verificacao de temperatura da cama (usado em modo bang-bang)
             static millis_t next_bed_check_ms[BED_COUNT];
         #endif
         #if HAS_MULTI_BEDS
-            // Valores mínimo e máximo permitidos para leitura bruta de cada cama
+            // Valores minimo e maximo permitidos para leitura bruta de cada cama
             static raw_adc_t mintemp_raw_BED[BED_COUNT], maxtemp_raw_BED[BED_COUNT];
         #endif
     #endif
-
     
     #if ADS1115_BED_READING || PCF8574_BED_CONTROL
         // Inicializa o barramento I²C (Wire)
@@ -156,7 +136,7 @@ class Temperature {
         // Inicializa o ADS1115
         static void initADS1115();
 
-        // Lê as temperaturas das camas via ADS1115
+        // Le as temperaturas das camas via ADS1115
         static void read_bed_temperatures_ADS1115();
     #endif
 
@@ -169,24 +149,18 @@ class Temperature {
         // Escreve o estado de aquecimento das camas no PCF8574
         static void write_bed_PCF8574_state(const uint8_t state);
     #endif
-
     ...
-
     public:
     /**
      * Métodos de Instância
      */
     void init();
-
     ...
-
    #if HAS_HEATED_BED
         // Converte a leitura bruta (ADC) da cama aquecida para temperatura em Celsius
         static celsius_float_t analog_to_celsius_bed(const raw_adc_t raw);
     #endif
-
     ...
-
      /**
      * Chamado pelo ISR de temepratura
      */
@@ -197,14 +171,12 @@ class Temperature {
      * Chamado periodicamente para gerenciar aquecedores e manter o watchdog atualizado
      */
     static void task();
-
     ...
-
     #if HAS_HEATED_BED
       #if HAS_MULTI_BEDS
 
         #if ENABLED(SHOW_TEMP_ADC_VALUES)
-            // Retorna a leitura bruta do ADC para uma cama específica
+            // Retorna a leitura bruta do ADC para uma cama especifica
             static raw_adc_t rawBedTemp(const uint8_t bed) { return temp_bed[bed].getraw(); }
         #endif
 
@@ -217,32 +189,32 @@ class Temperature {
         // Retorna a temperatura alvo da cama
         static celsius_t degTargetBed(const uint8_t bed) { return temp_bed[bed].target; }
        
-        // Verifica se a cama está aquecendo
+        // Verifica se a cama esta aquecendo
         static bool isHeatingBed(const uint8_t bed) { return temp_bed[bed].target > temp_bed[bed].celsius; }
 
-        // Verifica se qualquer cama está aquecendo
+        // Verifica se qualquer cama esta aquecendo
         static bool isAnyHeatingBed() {
             for (uint8_t b = 0; b < BED_COUNT; b++)
                 if (isHeatingBed(b)) return true;
             return false;
         }
     
-        // Verifica se a cama está resfriando
+        // Verifica se a cama esta resfriando
         static bool isCoolingBed(const uint8_t bed) { return temp_bed[bed].target < temp_bed[bed].celsius; }
 
-        // Verifica se qualquer cama está resfriando
+        // Verifica se qualquer cama esta resfriando
         static bool isAnyCoolingBed() {
             for (uint8_t b = 0; b < BED_COUNT; b++)
                 if (isCoolingBed(b)) return true;
             return false;
         }
 
-        // Verifica se a temperatura atual está próxima da meta (com histerese)
+        // Verifica se a temperatura atual esta próxima da meta (com histerese)
             static bool degBedNear(const uint8_t bed, const celsius_t temp) {
             return ABS(wholeDegBed(bed) - temp) < TEMP_BED_HYSTERESIS;
         }
 
-        // Verifica se todas as camas estão próximas da temperatura desejada
+        // Verifica se todas as camas estao próximas da temperatura desejada
         static bool degAllBedsNear(const celsius_t temp) {
             for (uint8_t b = 0; b < BED_COUNT; ++b) {
                 if (!degBedNear(b, temp)) return false;
@@ -250,12 +222,12 @@ class Temperature {
             return true;
         }
 
-         // Inicia a verificação de aquecimento para uma cama
+         // Inicia a verificacao de aquecimento para uma cama
             static void start_watching_bed(const uint8_t bed) {
             TERN_(WATCH_BED, watch_bed[bed].restart(degBed(bed), degTargetBed(bed)));
         }
 
-        // Inicia a verificação de aquecimento para todas as camas
+        // Inicia a verificacao de aquecimento para todas as camas
         static void start_watching_all_beds() {
             for (uint8_t b = 0; b < BED_COUNT; b++)
                 start_watching_bed(b);
@@ -299,9 +271,7 @@ class Temperature {
       #else //single bed Fallback
        ...}
     #endif
-
     ...
-
     /**
      * O PWM de software para um aquecedor
      */
@@ -311,31 +281,28 @@ class Temperature {
      * Desliga todos os aquecedores, definido temperatura alvo para zero
      */
     static void disable_all_heaters();
-
     private;
-
         /**
-        * Leitura e conversão das temperaturas brutas (ADC → Celsius).
+        * Leitura e conversao das temperaturas brutas (ADC → Celsius).
         *
-        * - raw_temps_ready: flag volátil que indica se as leituras brutas dos sensores (raw ADC)
-        *   já foram realizadas e estão prontas para serem convertidas em temperatura real.
+        * - raw_temps_ready: flag volatil que indica se as leituras brutas dos sensores (raw ADC)
+        *   ja foram realizadas e estao prontas para serem convertidas em temperatura real.
         *
-        * - update_raw_temperatures(): função que realiza a leitura dos sensores e preenche os valores brutos.
-        *   Esta função é normalmente chamada em interrupções ou no início do ciclo térmico principal.
+        * - update_raw_temperatures(): funcao que realiza a leitura dos sensores e preenche os valores brutos.
+        *   Esta funcao é normalmente chamada em interrupcões ou no inicio do ciclo térmico principal.
         *
         * - updateTemperaturesFromRawValues(): converte os valores brutos de todos os sensores (inclusive hotends,
-        *   cama(s), câmara, etc.) para temperaturas em Celsius, preenchendo as variáveis `celsius` correspondentes.
+        *   cama(s), câmara, etc.) para temperaturas em Celsius, preenchendo as variaveis `celsius` correspondentes.
         *
-        * - updateTemperaturesIfReady(): função auxiliar que verifica se `raw_temps_ready` está true.
+        * - updateTemperaturesIfReady(): funcao auxiliar que verifica se `raw_temps_ready` esta true.
         *   Se estiver, chama `updateTemperaturesFromRawValues()`, reseta a flag e retorna true.
-        *   Caso contrário, retorna false sem fazer nada.
+        *   Caso contrario, retorna false sem fazer nada.
         *
-        * Essa estrutura permite que a conversão só ocorra quando os dados estiverem prontos,
-        * garantindo sincronismo entre leitura e cálculo.
+        * Essa estrutura permite que a conversao só ocorra quando os dados estiverem prontos,
+        * garantindo sincronismo entre leitura e calculo.
         */
-
-       // Leitura e conversão dos sensores de temperatura
-        static volatile bool raw_temps_ready;        // Flag que indica se os dados brutos estão prontos para conversão
+       // Leitura e conversao dos sensores de temperatura
+        static volatile bool raw_temps_ready;        // Flag que indica se os dados brutos estao prontos para conversao
 
         static void update_raw_temperatures();       // Atualiza os valores brutos de temperatura dos sensores
 
@@ -347,7 +314,5 @@ class Temperature {
             raw_temps_ready = false;                   // Limpa a flag
             return true;
         }
-
 };
-
 extern Temperature thermalManager;

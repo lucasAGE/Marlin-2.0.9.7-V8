@@ -1,7 +1,7 @@
 /*thermistor_133.h*/
 #pragma once
 
-//Progressão idêntica ao thermsitor 1, entretanto 16bits (0-32768) e não 10bits como o original (0-1023);
+//Progressao identica ao thermsitor 1, entretanto 16bits (0-32768) e não 10bits como o original (0-1023);
 
 constexpr temp_entry_t temptable_133[] PROGMEM = {
   { OV(  180), -15 },

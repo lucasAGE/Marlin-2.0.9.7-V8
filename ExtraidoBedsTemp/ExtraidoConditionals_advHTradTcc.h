@@ -1,15 +1,12 @@
 /**
  * Conditionals_adv.h
- * Arquivo com definições condicionais que são configuradas antes do pins.h
- * e que dependem das opções definidas em Configuration_adv.h.
+ * Arquivo com definicoes condicionais que são configuradas antes do pins.h
+ * e que dependem das opcoes definidas em Configuration_adv.h.
  */
-
 ...
-
 /**
  * Sensores de Temperatura; define quais sensores estão conectados.
  */
-
 // Identificadores dos sensores de temperatura
 
 #define HID_REDUNDANT -9
