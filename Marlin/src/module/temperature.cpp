@@ -264,11 +264,13 @@
 
         // Exibe no terminal os valores lidos e convertidos (debug opcional)
         #if SERIAL_MULTI_BEDS
+        /*
           SERIAL_ECHOPGM("ADS Cama "); SERIAL_ECHO(i);
           SERIAL_ECHOPGM(" Sinal 10bits: "); SERIAL_ECHOLN(raw10_ADS1115);
           SERIAL_ECHOPGM(" Sinal 16bits: "); SERIAL_ECHOLN(raw16_ADS1115);
           SERIAL_ECHOPGM(" Sinal 32bits: "); SERIAL_ECHOLN(raw32_ADS1115);
           SERIAL_ECHOPGM(" Sinal escalado: "); SERIAL_ECHOLN(scaled);
+          */
         #endif
       }
     }
@@ -290,24 +292,41 @@
     static millis_t last_pcf_write_ms = 0;
 
     // Escreve o estado no PCF8574 (máximo 1 vez a cada intervalo definido)
-    void Temperature::write_bed_PCF8574_state(const uint8_t state) {
+    void Temperature::write_bed_PCF8574_state(const uint8_t pcf_state) {
       const millis_t now = millis();
       if (now - last_pcf_write_ms < PCF8574_WRITE_INTERVAL_MS) return;
       last_pcf_write_ms = now;
 
       #if SERIAL_MULTI_BEDS
+
+        SERIAL_ECHOPGM("[BED_TEMP_LOG] ");
+        SERIAL_ECHO(millis());
+
+        // Cama 1 (real - índice 0)
+        SERIAL_ECHOPGM(", T1:"); SERIAL_ECHO(temp_bed[0].celsius);
+
+        // Cama 2 (simulada = T1)
+        SERIAL_ECHOPGM(", T2:"); SERIAL_ECHO(temp_bed[0].celsius);
+
+        // Cama 3 (real - índice 2)
+        SERIAL_ECHOPGM(", T3:"); SERIAL_ECHO(temp_bed[2].celsius);
+
+        // Cama 4 (real - índice 3)
+        SERIAL_ECHOPGM(", T4:"); SERIAL_ECHO(temp_bed[3].celsius);
+        /*
         // Exibe no terminal o estado de cada cama (bit 0 a 3)
-        SERIAL_ECHOPGM("PCF Beds: [");
-        for (uint8_t b = 0; b < 4; ++b) {
-          SERIAL_ECHO((state >> b) & 1);
-          if (b < 3) SERIAL_ECHOPGM(",");
-        }
-        SERIAL_ECHOLNPGM("] ");
+                SERIAL_ECHOPGM("PCF Beds: [");
+                for (uint8_t b = 0; b < 4; ++b) {
+                  SERIAL_ECHO((pcf_state >> b) & 1);
+                  if (b < 3) SERIAL_ECHOPGM(",");
+                }
+                SERIAL_ECHOLNPGM("] "); */
+       
       #endif
 
       // Envia o valor via I2C
       Wire.beginTransmission(PCF8574_ADDRESS);
-      Wire.write(state);
+      Wire.write(pcf_state);
       const uint8_t err = Wire.endTransmission();
 
       // Se houver erro na transmissão, exibe no terminal
@@ -2454,7 +2473,7 @@ void Temperature::task() {
 
     #if SERIAL_MULTI_BEDS
       // (Opcional) Exibe o valor bruto lido via serial para debug
-      SERIAL_ECHOPGM("atcb raw10_ADS1115: "); SERIAL_ECHOLN(raw);
+      //SERIAL_ECHOPGM("atcb raw10_ADS1115: "); SERIAL_ECHOLN(raw);
     #endif
 
   }
@@ -2585,12 +2604,13 @@ void Temperature::updateTemperaturesFromRawValues() {
     // Para cada cama, converte o valor bruto (raw de 10 bits) em temperatura em °C
     for (uint8_t b = 0; b < BED_COUNT; ++b) {
       temp_bed[b].celsius = analog_to_celsius_bed(temp_bed[b].getraw()); // Conversão
-      float c = temp_bed[b].celsius;  // Armazena temperatura em variável auxiliar
+      
 
       #if SERIAL_MULTI_BEDS        
+      //float c = temp_bed[b].celsius;  // Armazena temperatura em variável auxiliar
         // (Debug) Imprime o valor da temperatura via serial
-        SERIAL_ECHO(c);
-        SERIAL_ECHOPGM(", ");               
+       // SERIAL_ECHO(c);
+        //SERIAL_ECHOPGM(", ");               
       #endif          
     }         
 
@@ -3768,18 +3788,18 @@ void Temperature::isr() {
       #if HAS_HEATED_BED
         #if PCF8574_BED_CONTROL
           // Monta o byte de controle para o PCF8574, com 1 bit para cada cama
-          uint8_t state = 0;
+          uint8_t pcf_state = 0;
           for (uint8_t b = 0; b < BED_COUNT; ++b) {
             const uint8_t mask = 1 << b; // Máscara para o bit correspondente à cama b
 
             // Atualiza o contador PWM e verifica se o bit deve estar ligado
             if ( soft_pwm_bed[b].add(mask, temp_bed[b].soft_pwm_amount) )
-              state |= _BV(BED0_PCF_BIT + b); // Ativa o bit da cama no byte de controle final
+              pcf_state |= _BV(BED0_PCF_BIT + b); // Ativa o bit da cama no byte de controle final
           }
 
           // Atualiza a variável global com o novo estado das camas
           // OBS: não envia ainda via I²C, apenas prepara
-          bed_pcf_state = state;
+          bed_pcf_state = pcf_state;
 
         #else // Controle direto de uma única cama (sem PCF8574)
           _PWM_MOD(BED, soft_pwm_bed, temp_bed); // Usa macro para controle PWM direto via pino
