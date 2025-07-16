@@ -297,36 +297,29 @@
       if (now - last_pcf_write_ms < PCF8574_WRITE_INTERVAL_MS) return;
       last_pcf_write_ms = now;
 
+      uint8_t inverted_state = ~pcf_state;
+
       #if SERIAL_MULTI_BEDS
-
-        SERIAL_ECHOPGM("[BED_TEMP_LOG] ");
-        SERIAL_ECHO(millis());
-
-        // Cama 1 (real - índice 0)
-        SERIAL_ECHOPGM(", T1:"); SERIAL_ECHO(temp_bed[0].celsius);
-
-        // Cama 2 (simulada = T1)
-        SERIAL_ECHOPGM(", T2:"); SERIAL_ECHO(temp_bed[0].celsius);
-
-        // Cama 3 (real - índice 2)
-        SERIAL_ECHOPGM(", T3:"); SERIAL_ECHO(temp_bed[2].celsius);
-
-        // Cama 4 (real - índice 3)
-        SERIAL_ECHOPGM(", T4:"); SERIAL_ECHO(temp_bed[3].celsius);
-        /*
-        // Exibe no terminal o estado de cada cama (bit 0 a 3)
-                SERIAL_ECHOPGM("PCF Beds: [");
-                for (uint8_t b = 0; b < 4; ++b) {
-                  SERIAL_ECHO((pcf_state >> b) & 1);
-                  if (b < 3) SERIAL_ECHOPGM(",");
-                }
-                SERIAL_ECHOLNPGM("] "); */
-       
-      #endif
+        // Usa diretamente o Serial (host-only)
+        Serial.print(now);
+        Serial.print(" PCF State: ");
+        // imprime em binário 4 bits
+        Serial.print(inverted_state, BIN);
+        Serial.print(" ADS-> ");
+        // temperaturas com duas casas decimais
+        Serial.print(temp_bed[0].celsius, 2);
+        Serial.print(", ");
+        Serial.print(temp_bed[1].celsius, 2);
+        Serial.print(", ");
+        Serial.print(temp_bed[2].celsius, 2);
+        Serial.print(", ");
+        Serial.println(temp_bed[3].celsius, 2);
+      #endif    
 
       // Envia o valor via I2C
       Wire.beginTransmission(PCF8574_ADDRESS);
-      Wire.write(pcf_state);
+      //Wire.write(pcf_state);
+      Wire.write(inverted_state);
       const uint8_t err = Wire.endTransmission();
 
       // Se houver erro na transmissão, exibe no terminal
