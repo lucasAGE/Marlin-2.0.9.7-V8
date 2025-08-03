@@ -653,7 +653,7 @@
 
 //#define PIDTEMPBED // NÃO HABILITAR PARA SISTEMAS COM MÚLTIPLAS CAMAS (multi-beds)!
 
-//#define BED_LIMIT_SWITCHING  // Controle alternativo com histerese para bang-bang (não utilizado no projeto)
+#define BED_LIMIT_SWITCHING  // Controle alternativo com histerese para bang-bang (não utilizado no projeto)
 
 /**
  * Potência máxima da cama aquecida (Max Bed Power)

@@ -1771,24 +1771,39 @@ void Temperature::min_temp_error(const heater_id_t heater_id) {
   #if HAS_MULTI_BEDS
 
     // Gerencia o aquecimento de uma cama específica (modo bang-bang)
-    void Temperature::manage_heated_bed(const uint8_t bed, const millis_t &ms) {                    
-                        
+    void Temperature::manage_heated_bed(const uint8_t bed, const millis_t &ms) {
+
       // Verifica se já passou o tempo mínimo para nova avaliação
-      if (PENDING(ms, next_bed_check_ms[bed])) {            
-        next_bed_check_ms[bed] = ms + BED_CHECK_INTERVAL;  // Atualiza tempo para próxima verificação
-      }                 
+      if (PENDING(ms, next_bed_check_ms[bed]))
+        next_bed_check_ms[bed] = ms + BED_CHECK_INTERVAL;
 
       // Se a temperatura atual estiver dentro da faixa segura
       if (WITHIN(temp_bed[bed].celsius, BED_MINTEMP, BED_MAXTEMP)) {
-        // Aplica potência se a temperatura estiver abaixo do alvo
-        temp_bed[bed].soft_pwm_amount =
-          temp_bed[bed].is_below_target() ? MAX_BED_POWER >> 1 : 0;         
+
+        #if ENABLED(BED_LIMIT_SWITCHING)
+          // Controle com histerese: evita ligar/desligar constante
+          if (temp_bed[bed].celsius >= temp_bed[bed].target + BED_HYSTERESIS) {
+            temp_bed[bed].soft_pwm_amount = 0;
+          }
+          else if (temp_bed[bed].is_below_target(-(BED_HYSTERESIS) + 1)) {
+            temp_bed[bed].soft_pwm_amount = MAX_BED_POWER >> 1;
+          }
+          // Senão, mantém o valor anterior (sem alteração)
+        #else
+          // Controle simples: liga abaixo da meta, desliga ao atingir
+          temp_bed[bed].soft_pwm_amount =
+            temp_bed[bed].is_below_target() ? MAX_BED_POWER >> 1 : 0;
+        #endif
+
       }
       else {
-        // Desliga o aquecimento por segurança
-        temp_bed[bed].soft_pwm_amount = 0;          
-      }       
+        // Fora da faixa segura — desliga imediatamente
+        temp_bed[bed].soft_pwm_amount = 0;
+      }
     }
+
+
+    
 
     // Gerencia o aquecimento de todas as camas (chama a função anterior em loop)
     void Temperature::manage_all_heated_beds(const millis_t &ms) {

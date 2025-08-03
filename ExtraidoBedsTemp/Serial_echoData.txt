@@ -60,9 +60,7 @@ Printer is now online
 
 M140 S40
 
-offline> connect
-No port specified - connecting to COM3 at 115200bps
-offline> M140 S40
+
 SENDING:M140 S40
 10256 PCF State: 11111111 ADS-> 26.73, 20.46, 20.19, 26.50
 11411 PCF State: 11110000 ADS-> 26.73, 20.46, 20.19, 26.50
